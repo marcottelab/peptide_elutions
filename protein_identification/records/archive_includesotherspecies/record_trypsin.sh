@@ -1,0 +1,14 @@
+python /project/cmcwhite/pipelines/MS_grouped_lookup/scripts/proteome_utils/trypsin.py -i proteomes/uniprot-proteome_UP000006548.fasta -o peptides/uniprot-proteome_UP000006548_peptides.csv -m 2
+python /project/cmcwhite/pipelines/MS_grouped_lookup/scripts/proteome_utils/trypsin.py -i proteomes/uniprot-proteome_UP000032141.fasta -o peptides/uniprot-proteome_UP000032141_peptides.csv -m 2
+python /project/cmcwhite/pipelines/MS_grouped_lookup/scripts/proteome_utils/trypsin.py -i proteomes/uniprot-proteome_UP000006906.fasta -o peptides/uniprot-proteome_UP000006906_peptides.csv -m 2
+python /project/cmcwhite/pipelines/MS_grouped_lookup/scripts/proteome_utils/trypsin.py -i proteomes/uniprot-proteome_UP000059680.fasta -o peptides/uniprot-proteome_UP000059680_peptides.csv -m 2
+python /project/cmcwhite/pipelines/MS_grouped_lookup/scripts/proteome_utils/trypsin.py -i proteomes/uniprot-proteome_UP000001514.fasta -o peptides/uniprot-proteome_UP000001514_peptides.csv -m 2
+python /project/cmcwhite/pipelines/MS_grouped_lookup/scripts/proteome_utils/trypsin.py -i proteomes/uniprot-proteome_UP000019116.fasta -o peptides/uniprot-proteome_UP000019116_peptides.csv -m 2
+python /project/cmcwhite/pipelines/MS_grouped_lookup/scripts/proteome_utils/trypsin.py -i proteomes/uniprot-proteome_UP000004994.fasta -o peptides/uniprot-proteome_UP000004994_peptides.csv -m 2
+python /project/cmcwhite/pipelines/MS_grouped_lookup/scripts/proteome_utils/trypsin.py -i proteomes/Cquinoa_392_v1.0.protein.fasta -o peptides/Cquinoa_392_v1.0_peptides.csv -m 2
+python /project/cmcwhite/pipelines/MS_grouped_lookup/scripts/proteome_utils/trypsin.py -i proteomes/McWhite201602_combined_prot_full_NR_uc097seeds.fasta -o peptides/McWhite201602_combined_prot_full_NR_uc097seeds_peptides.csv -m 2
+python /project/cmcwhite/pipelines/MS_grouped_lookup/scripts/proteome_utils/trypsin.py -i proteomes/Euglena_nr.fasta -o peptides/Euglena_nr_peptides.csv -m 2
+python /project/cmcwhite/pipelines/MS_grouped_lookup/scripts/proteome_utils/trypsin.py -i proteomes/CoConut.protein.fasta -o peptides/CoConut.protein_peptides.csv -m 2
+python /project/cmcwhite/pipelines/MS_grouped_lookup/scripts/proteome_utils/trypsin.py -i proteomes/uniprot-proteome_UP000008827.fasta -o peptides/uniprot-proteome_UP000008827_peptides.csv -m 2
+python /project/cmcwhite/pipelines/MS_grouped_lookup/scripts/proteome_utils/trypsin.py -i proteomes/canSat3_transcriptome-representative_ORFs.fasta -o peptides/canSat3_transcriptome-representative_ORFs_peptides.csv -m 2
+python /project/cmcwhite/pipelines/MS_grouped_lookup/scripts/proteome_utils/trypsin.py -i proteomes/uniprot-proteome_UP000007305.fasta -o peptides/uniprot-proteome_UP000007305_peptides.csv -m 2
