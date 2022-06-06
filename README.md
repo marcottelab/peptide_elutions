@@ -16,6 +16,11 @@ Hemolysate_IEX_1 | Hemolysate_IEX_07_10032017 | ADGLAVIGVLMKVGEANPK             
 Hemolysate_IEX_1 | Hemolysate_IEX_07_10032017 | ADGLAVIGVLMKVGEANPKLQKVLDALQAIK   | 4.0
 Hemolysate_IEX_1 | Hemolysate_IEX_07_10032017 | ADGLAVIGVLMKVGEANPKLQKVLDALQAIKTK | 3.0
 
+Alternately, begin with a wide csv of peptide identifications x fractionID
+
+Hemolysate_IEX_1.wide.csv
+Peptide | Hemolysate_IEX_07 | Hemolysate_IEX_08 | Hemolysate_IEX_09_10032017
+--------|-------------------|-------------------|---------------------------
 
 
 ### Processing
