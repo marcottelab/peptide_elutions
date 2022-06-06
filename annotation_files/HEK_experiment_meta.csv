@@ -1,0 +1,5 @@
+ExperimentID,Source,Column,Order
+Anna_HEK293T_SEC_control_113016,HEK,SEC,1
+Anna_Control_HEK_SEC_020118_run2,HEK,SEC,2
+Anna_HEK293T_IEX_mixed_bed_control_042217,HEK,IEX,3
+Anna_HEK293T_IEX_control_011217,HEK,WWC,4

@@ -1,0 +1,11 @@
+ExperimentID,Compartment,Column,Order
+Ghosts_DDM_BiobasicSEC_1,Ghosts,SEC,1
+Ghosts_DDM_SEC,Ghosts,SEC,2
+Ghosts_DDM_IEX,Ghosts,IEX,3
+Ghosts_Houser_WWC,Ghosts,WWC,4
+Hemolysate_SEC,Hemolysate,SEC,5
+Hemolysate6569_CtrlRNAseA,Hemolysate,SEC,6
+Hemolysate6569_RNAseA,Hemolysate,SEC,7
+Hemolysate_IEX_1,Hemolysate,IEX,8
+Hemolysate_IEX_2,Hemolysate,IEX,9
+Hemolysate_Houser_WWC,Hemolysate,WWC,10
