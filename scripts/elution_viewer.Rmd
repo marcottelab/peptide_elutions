@@ -1,0 +1,2645 @@
+---
+title: "elution_viewer"
+output: html_document
+---
+
+
+### Elution viewer
+```{r}
+
+elut_viewer <- function(protid, short_tidy_both , domaindis_setup){
+  tester <-short_tidy_both %>%
+  #filter(source == "semienzy") %>%
+  filter(grepl(paste0(protid, "$"), ProteinID)) 
+
+  tester_domains <- domaindis_setup %>%
+   filter(grepl(paste0(protid, "$"), Entry_name))
+  
+
+shinyApp(
+ui = basicPage(
+  fluidRow(
+            splitLayout(cellWidths = c("10%", "80%", "10%"),
+            plotOutput("plot0"),
+            plotOutput("plot1", brush = "plot_brush"),
+            plotOutput("plot2")
+  )),
+  fluidRow(
+            splitLayout(cellWidths = c( "35%", "25%", "40%"), cellArgs = list(style="padding: 20px"),     radioButtons("peakid",
+                   label = "Select peakid",
+                   choices = list("1" = 1,"2" = 2,"3" = 3,"4" = 4, "5" = 5, "6" = 6, "7" = 7),
+                   selected = 1,
+                   inline = TRUE),
+    radioButtons("term",
+                   label = "Select terminal",
+                   choices = list("full" = "full","nterm" = "nterm","cterm" = "cterm", "internal" = "internal"),
+                   selected = "full",
+                   inline = TRUE),
+   radioButtons("confidence",
+                   label = "Confidence",
+                   choices = list("low","medium", "high", "very high"),
+                   selected = "very high",
+                   inline = TRUE)
+
+            )),
+ 
+  fluidRow(
+            splitLayout(cellWidths = c( "30%", "15%", "15%", "20%", "20%"), cellArgs = list(style="padding: 20px"),
+           
+            radioButtons("candidate",
+                   label = "If multiple candidates of same peak",
+                   choices = list("A" = "A","B" = "B","C" = "C" ),
+                   selected = "A",
+                   inline = TRUE),
+
+            radioButtons("flag_phos",
+                    label = "Flag_phosph",
+                    choices = list("F" = "F", "T" = "T"),
+                    selected = "F",
+                    inline = TRUE
+                         ),
+            radioButtons("flag_frag",
+                    label = "Flag_frag",
+                    choices = list("F" = "F", "T" = "T"),
+                    selected = "F",
+                    inline = TRUE
+                         ),
+             actionButton("doAppendRows","Add selection"),
+             downloadButton('downloadData', 'Download' )
+
+            )),
+
+  verbatimTextOutput("info")
+),
+server = function(input, output) {
+
+  output$plot0 <- renderPlot(({
+    plot_grid(NULL, pepcov_fxn(tester), rel_heights = c(0.1, 1), ncol = 1)
+  }))
+  
+    output$plot1 <- renderPlot({
+    pep_point_fxn(tester, pepmods = FALSE)
+  })
+    
+  output$plot2 <- renderPlot(({
+    plot_domain_dis(tester_domains)
+  }))
+  
+  rv <- reactiveValues(dfnew=NULL)
+
+  observeEvent(input$doAppendRows,{
+
+    #dfs <- dfsel()
+    dfs <- brushedPoints(tester, input$plot_brush, xvar = "FractionOrder", yvar = "Peptide") 
+    dfs$peakid <- input$peakid
+    dfs$term <-  input$term
+    dfs$candidate <- input$candidate
+    if(is.null(rv$dfnew)){
+     
+      rv$dfnew <- dfs
+    } else {
+      rv$dfnew <- bind_rows(dfs, rv$dfnew)
+    }
+  })
+  output$downloadData <- downloadHandler(
+
+    filename = function() {
+       paste('peptcatdata-', protid, '.csv', sep='')
+     },
+     content = function(con) {
+       write_csv(rv$dfnew, con)
+     }
+ )
+
+
+  output$info<-renderPrint(rv$dfnew)
+
+})
+}
+
+
+elut_viewer("WDR44_HUMAN", short_tidy_unique, domaindis_setup)
+```
+
+
+### Manual peak selection of prioritized proteins
+```{r}
+#start
+
+elut_viewer("ABCBA_HUMAN", short_tidy_unique, domaindis_setup)
+#elut_viewer("TSS_ARATH", short_tidy_unique, domaindis_setup)
+#elut_viewer("PHOT1_ARATH", short_tidy_unique, domaindis_setup) # anti phot1 GFP http://www.plantcell.org/content/21/10/3226, figure 12 blot show consistent fragment
+#elut_viewer("VILI4_ARATH", short_tidy_unique, domaindis_setup) # strong
+#elut_viewer("RD29A_ARATH", short_tidy_unique, domaindis_setup) 
+#elut_viewer("TBCB_ARATH", short_tidy_unique, domaindis_setup) #split
+#elut_viewer("RNJ_ARATH", short_tidy_unique, domaindis_setup)
+#elut_viewer("P2C62_ARATH", short_tidy_unique, domaindis_setup)
+#elut_viewer("Y4554_ARATH", short_tidy_unique, domaindis_setup)
+#elut_viewer("RH38_ARATH", short_tidy_unique, domaindis_setup)
+#elut_viewer("MTV1_ARATH", short_tidy_unique, domaindis_setup)
+#elut_viewer("PMI1_ARATH", short_tidy_unique, domaindis_setup)
+#elut_viewer("BGL40_ARATH", short_tidy_unique, domaindis_setup) #
+#elut_viewer("BTR1_ARATH", short_tidy_unique, domaindis_setup) # nice
+#elut_viewer("BXL7_ARATH", short_tidy_unique, domaindis_setup) # loss of fibronectin cterm superclean. connector?
+#elut_viewer("IF2C_ARATH", short_tidy_unique, domaindis_setup) # very broken up
+#elut_viewer("IF4B3_ARATH", short_tidy_unique, domaindis_setup)
+#elut_viewer("F4I420_ARATH", short_tidy_unique, domaindis_setup)
+#elut_viewer("F4KHD5_ARATH", short_tidy_unique, domaindis_setup) # super long
+elut_viewer("Q94AJ9_ARATH", short_tidy_unique, domaindis_setup)
+elut_viewer("Q9FMM3_ARATH", short_tidy_unique, domaindis_setup)
+elut_viewer("IF4G1_ARATH", short_tidy_unique, domaindis_setup)
+elut_viewer("AMI1_ARATH", short_tidy_unique, domaindis_setup)
+elut_viewer("COPA2_ARATH", short_tidy_unique, domaindis_setup) # NIce
+elut_viewer("COPA1_ARATH", short_tidy_unique, domaindis_setup) # NIce
+elut_viewer("COPE1_ARATH", short_tidy_unique, domaindis_setup)# Goes along with c-terminus in fl and c-tmern.
+
+
+short_tidy_unique$source <- NA
+
+#elut_viewer("A0A2K3DES1_CHLRE", short_tidy_unique, domaindis_setup)
+#elut_viewer("RK5_CHLRE", short_tidy_unique, domaindis_setup)
+#elut_viewer("A0A2K3CNK8_CHLRE", short_tidy_unique, domaindis_setup)
+#elut_viewer("A0A2K3CQA4_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3CQC0_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3CQM5_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3CRT7_CHLRE", short_tidy_unique, domaindis_setup)
+#elut_viewer("A0A2K3CRZ3_CHLRE", short_tidy_unique, domaindis_setup) # Erratice, not strong fragments
+#elut_viewer("A0A2K3CS36_CHLRE", short_tidy_unique, domaindis_setup)
+#elut_viewer("A0A2K3CT15_CHLRE", short_tidy_unique, domaindis_setup)
+#elut_viewer("A0A2K3CTA4_CHLRE", short_tidy_unique, domaindis_setup)
+#elut_viewer("A0A2K3CTK9_CHLRE", short_tidy_unique, domaindis_setup)
+#elut_viewer("A0A2K3CUI0_CHLRE", short_tidy_unique, domaindis_setup)
+#elut_viewer("A0A2K3CUK8_CHLRE", short_tidy_unique, domaindis_setup)
+#elut_viewer("A0A2K3CUM5_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3CUS5_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3CV21_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3CXQ8_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3CZ51_CHLRE", short_tidy_unique, domaindis_setup) # EIF3A
+#elut_viewer("A0A2K3D1T9_CHLRE", short_tidy_unique, domaindis_setup) # IEX and SEC SF3B1
+#elut_viewer("A0A2K3D274_CHLRE", short_tidy_unique, domaindis_setup)
+#elut_viewer("A0A2K3D2A7_CHLRE", short_tidy_unique, domaindis_setup)
+#elut_viewer("A0A2K3D2Q9_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3D2T6_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3D393_CHLRE", short_tidy_unique, domaindis_setup)
+#elut_viewer("A0A2K3D3A9_CHLRE", short_tidy_unique, domaindis_setup) Not great
+#elut_viewer("A0A2K3D3K4_CHLRE", short_tidy_unique, domaindis_setup) 
+#elut_viewer("A0A2K3D3M7_CHLRE", short_tidy_unique, domaindis_setup)# Clear loss of disordered
+#elut_viewer("A0A2K3D4R1_CHLRE", short_tidy_unique, domaindis_setup)
+#elut_viewer("A0A2K3D588_CHLRE", short_tidy_unique, domaindis_setup) # reject, no break
+#elut_viewer("A0A2K3D5C1_CHLRE", short_tidy_unique, domaindis_setup)
+#elut_viewer("A0A2K3D701_CHLRE", short_tidy_unique, domaindis_setup) SPT16 - 
+#elut_viewer("A0A2K3D849_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3D8F0_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3D8H2_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3D8I0_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3D8I4_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3D9U2_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3D9W0_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3DAW8_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3DAY4_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3DC97_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3DCF2_CHLRE", short_tidy_unique, domaindis_setup)
+#elut_viewer("A0A2K3DCW4_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3DDH8_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3DDQ5_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3DE30_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3DE66_CHLRE", short_tidy_unique, domaindis_setup)# clean
+elut_viewer("A0A2K3DEF1_CHLRE", short_tidy_unique, domaindis_setup)# fusion?
+elut_viewer("A0A2K3DEK7_CHLRE", short_tidy_unique, domaindis_setup)
+
+
+#elut_viewer("A0A2K3DEP8_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3DGK5_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3DGW4_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3DJ67_CHLRE", short_tidy_unique, domaindis_setup) # Very long disordered w/ func domain chopped off
+elut_viewer("A0A2K3DJF7_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3DJI1_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3DJN8_CHLRE", short_tidy_unique, domaindis_setup)
+#elut_viewer("A0A2K3DKH4_CHLRE", short_tidy_unique, domaindis_setup) Very clear loss of c-term extension after transmembrane Fibrocystin-like PC1-like notch-like processing. Highlight
+elut_viewer("A0A2K3DL22_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3DM99_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3DMT2_CHLRE", short_tidy_unique, domaindis_setup) # Complex
+elut_viewer("A0A2K3DPK1_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3DRF1_CHLRE", short_tidy_unique, domaindis_setup) # Ubl chopped off again
+elut_viewer("A0A2K3DT09_CHLRE", short_tidy_unique, domaindis_setup) # Another pherophorin pair cleaved into two. Pherophorin cleavage known in-vivo event https://onlinelibrary.wiley.com/doi/full/10.1111/j.1365-313X.2005.02627.x
+elut_viewer("A0A2K3DT32_CHLRE", short_tidy_unique, domaindis_setup) # Too complex all disordered
+elut_viewer("A0A2K3DTX8_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3DUR5_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3DUW9_CHLRE", short_tidy_unique, domaindis_setup) # Cleave break  scavenger receptor cysteine-rich (SRCR)
+elut_viewer("A0A2K3DVC5_CHLRE", short_tidy_unique, domaindis_setup)
+#elut_viewer("A0A2K3DW25_CHLRE", short_tidy_unique, domaindis_setup) # Not clear
+#elut_viewer("A0A2K3DW82_CHLRE", short_tidy_unique, domaindis_setup)
+#elut_viewer("A0A2K3DZY2_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3E099_CHLRE", short_tidy_unique, domaindis_setup) # All disordered, complex
+elut_viewer("A0A2K3E0D8_CHLRE", short_tidy_unique, domaindis_setup) # EIF5B
+elut_viewer("A0A2K3E0W1_CHLRE", short_tidy_unique, domaindis_setup) 
+elut_viewer("A0A2K3E1C3_CHLRE", short_tidy_unique, domaindis_setup) #CFAP45, human has low abundance
+elut_viewer("A0A2K3E4N7_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3E565_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3E5J0_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3E5P4_CHLRE", short_tidy_unique, domaindis_setup) # Disordered chopped
+elut_viewer("A0A2K3E831_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A8HQJ4_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A8HVV6_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A8HWZ6_CHLRE", short_tidy_unique, domaindis_setup) #RPL13
+elut_viewer("A8I2U9_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A8I531_CHLRE", short_tidy_unique, domaindis_setup) # W and w/o von willebrand factor adhesor at end. CHLD magnesium chelatase complex
+elut_viewer("A8I901_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A8I9T2_CHLRE", short_tidy_unique, domaindis_setup) # kinesin like
+elut_viewer("A8IFZ1_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A8ITH8_CHLRE", short_tidy_unique, domaindis_setup) # tcp1
+elut_viewer("A8J9P9_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("Q6UPR1_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("Q84TR5_CHLRE", short_tidy_unique, domaindis_setup) #MAPRE2
+elut_viewer("Q8LPD9_CHLRE", short_tidy_unique, domaindis_setup) # phototropin
+elut_viewer("Q9ATK5_CHLRE", short_tidy_unique, domaindis_setup) # Clean break PF6
+elut_viewer("CLPP_CHLRE", short_tidy_unique, domaindis_setup) # Important!  in frame insertion. cleaved off .
+#https://www.jbc.org/article/S0021-9258(20)42515-3/fulltext
+# IS1 essential. Two forms of complex after IS insertion. 
+elut_viewer("A0A2K3CP55_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3CPM2_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3CTD1_CHLRE", short_tidy_unique, domaindis_setup)# clean. Dilute domain severed = severed connector
+elut_viewer("A0A2K3CZA0_CHLRE", short_tidy_unique, domaindis_setup)  # coatamer, cleanly independent c-terminal. also in arabidopsis THIS
+elut_viewer("A0A2K3D5T6_CHLRE", short_tidy_unique, domaindis_setup) # complex in three at least parts
+elut_viewer("A0A2K3DHP9_CHLRE", short_tidy_unique, domaindis_setup) # TIF again
+elut_viewer("A0A2K3DKC3_CHLRE", short_tidy_unique, domaindis_setup) 
+elut_viewer("A0A2K3DLZ7_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3E7M7_CHLRE", short_tidy_unique, domaindis_setup) # Fragment of first set of domain repeats
+elut_viewer("A8II42_CHLRE", short_tidy_unique, domaindis_setup) # tcp like
+elut_viewer("A8J1B8_CHLRE", short_tidy_unique, domaindis_setup) # inconsistent gtpas
+elut_viewer("Q6V8K6_CHLRE", short_tidy_unique, domaindis_setup) # kinase
+elut_viewer("Q84X79_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3CN31_CHLRE", short_tidy_unique, domaindis_setup) # low coverage
+elut_viewer("A0A2K3CQV3_CHLRE", short_tidy_unique, domaindis_setup) # RRM w/ clean loss of disordered. compare to other
+elut_viewer("A0A2K3CUG9_CHLRE", short_tidy_unique, domaindis_setup) # low counts
+elut_viewer("A0A2K3CWR1_CHLRE", short_tidy_unique, domaindis_setup) # fully disordered
+elut_viewer("A0A2K3D1U9_CHLRE", short_tidy_unique, domaindis_setup) # a little ambiguous
+elut_viewer("A0A2K3D2H5_CHLRE", short_tidy_unique, domaindis_setup) # meh
+elut_viewer("A0A2K3D5P0_CHLRE", short_tidy_unique, domaindis_setup) # synaptobrevin alone c. Toxins cleave?
+elut_viewer("A0A2K3D6N5_CHLRE", short_tidy_unique, domaindis_setup) # nice obs of both n and c and full
+elut_viewer("A0A2K3D8R3_CHLRE", short_tidy_unique, domaindis_setup) # Very clear n and c
+elut_viewer("A0A2K3DD86_CHLRE", short_tidy_unique, domaindis_setup) # SAP domain
+elut_viewer("A0A2K3DDA3_CHLRE", short_tidy_unique, domaindis_setup) # no fragments
+elut_viewer("A0A2K3DJ44_CHLRE", short_tidy_unique, domaindis_setup)
+elut_viewer("A0A2K3DKA0_CHLRE", short_tidy_unique, domaindis_setup) # transmembrane separated pattern
+elut_viewer("A8IIP7_CHLRE", short_tidy_unique, domaindis_setup) # ATPase lid alone
+"A8I901"
+
+elut_viewer("ENSA_HUMAN", short_tidy_unique, domaindis_setup) # I don't see it
+elut_viewer("IF2P_HUMAN", short_tidy_unique, domaindis_setup)
+elut_viewer("AP2A1_HUMAN", short_tidy_unique, domaindis_setup) # So-so
+elut_viewer("RU2A_HUMAN", short_tidy_unique, domaindis_setup) # Not done yet with this one
+#elut_viewer("PARP1_HUMAN", short_tidy_unique, domaindis_setup)
+#elut_viewer("41_HUMAN", short_tidy_unique, domaindis_setup) # Very complicated. Check against
+#elut_viewer("NUCL_HUMAN", short_tidy_unique, domaindis_setup)
+#elut_viewer("IF2B_HUMAN", short_tidy_unique, domaindis_setup)
+#elut_viewer("PUR2_HUMAN", short_tidy_unique, domaindis_setup)
+#elut_viewer("NLTP_HUMAN", short_tidy_unique, domaindis_setup) # SCP2, example of tss variation
+#elut_viewer("DNMT1_HUMAN", short_tidy_unique, domaindis_setup) # Ambigurous
+#elut_viewer("MAP4_HUMAN", short_tidy_unique, domaindis_setup) # Fragment of just the microtubule binding c-terminus
+elut_viewer("T2FA_HUMAN", short_tidy_unique, domaindis_setup) # Skipped complicated
+elut_viewer("RS19_HUMAN", short_tidy_unique, domaindis_setup) # skipped
+elut_viewer("COPD_HUMAN", short_tidy_unique, domaindis_setup) # skipped
+#elut_viewer("PRC2A_HUMAN", short_tidy_unique, domaindis_setup)
+#elut_viewer("DHB4_HUMAN", short_tidy_unique, domaindis_setup) # Very clean, known
+#elut_viewer("CATC_HUMAN", short_tidy_unique, domaindis_setup) # Apparent in IEX, not in SEC example
+#elut_viewer("UBXN1_HUMAN", short_tidy_unique, domaindis_setup) # UBQ domain, sec, iex
+#elut_viewer("CAF1B_HUMAN", short_tidy_unique, domaindis_setup) #Meh
+#elut_viewer("TIF1B_HUMAN", short_tidy_unique, domaindis_setup) # has zinc finger in IEX
+#elut_viewer("G3BP1_HUMAN", short_tidy_unique, domaindis_setup)
+#elut_viewer("CDC73_HUMAN", short_tidy_unique, domaindis_setup) # Added to figure 4
+#elut_viewer("LARP1_HUMAN", short_tidy_unique, domaindis_setup) # disordered alone in SEC and IEXin mTORC1 complex
+#elut_viewer("DDX42_HUMAN", short_tidy_unique, domaindis_setup) # only iex
+#elut_viewer("LRC47_HUMAN", short_tidy_unique, domaindis_setup) # All around nice, also signal peptide?  # VERY clear loss of 2nd gene fusion domain Add
+#elut_viewer("PAIRB_HUMAN", short_tidy_unique, domaindis_setup) # Just n-terminal domain alone (SEC and IEX)
+#elut_viewer("NOA1_HUMAN", short_tidy_unique, domaindis_setup) # Not the  best
+#elut_viewer("ABCF1_HUMAN", short_tidy_unique, domaindis_setup) # A bit hard to interpret, pattern like PAIRB
+#elut_viewer("PDLI5_HUMAN", short_tidy_unique, domaindis_setup)  # Looks like at least zinc fingerws along
+#elut_viewer("NUCKS_HUMAN", short_tidy_unique, domaindis_setup) # Hard to untangle
+#elut_viewer("DDX21_HUMAN", short_tidy_unique, domaindis_setup) # SEC and IEX loss of n disordered
+#elut_viewer("SRRM2_HUMAN", short_tidy_unique, domaindis_setup) # Just a lot, phase separating
+#elut_viewer("E41L3_HUMAN", short_tidy_unique, domaindis_setup) # mostly in IEX1
+#elut_viewer("PRC2C_HUMAN", short_tidy_unique, domaindis_setup) # hard, many peptides
+#elut_viewer("GTF2I_HUMAN", short_tidy_unique, domaindis_setup) #zf repeat one
+#elut_viewer("NASP_HUMAN", short_tidy_unique, domaindis_setup)
+#elut_viewer("HCFC1_HUMAN", short_tidy_unique, domaindis_setup) # internal fragment
+#elut_viewer("SYMC_HUMAN", short_tidy_unique, domaindis_setup) # Loss of the nterm trna ligase
+elut_viewer("1433Z_HUMAN", short_tidy_unique, domaindis_setup) # skipped
+#elut_viewer("UBP15_HUMAN", short_tidy_unique, domaindis_setup)
+#elut_viewer("NUP98_HUMAN", short_tidy_unique, domaindis_setup) # known proteolysis
+#elut_viewer("GRSF1_HUMAN", short_tidy_unique, domaindis_setup) # Caught one that still has its mitochondrial transit peptide
+#elut_viewer("ELP2_HUMAN", short_tidy_unique, domaindis_setup) # Not too clear
+elut_viewer("HSP7C_HUMAN", short_tidy_unique, domaindis_setup) # skipped, more of a smear
+#elut_viewer("RFC4_HUMAN", short_tidy_unique, domaindis_setup) # Loss of RFC c-terminal
+elut_viewer("PICAL_HUMAN", short_tidy_unique, domaindis_setup) # Skipped, but HEKR_SEC2 missing many n terminal peptides rel to HEK_SEC2
+#ICAL_HUMAN
+elut_viewer("ICAL_HUMAN", short_tidy_unique, domaindis_setup) # Skipped, but HEKR_SEC2 missing many n terminal peptides rel to HEK_SEC2
+
+
+elut_viewer("PDS5A_HUMAN", short_tidy_unique, domaindis_setup) # Disordered C alone, no matching isoforms
+elut_viewer("DNJC2_HUMAN", short_tidy_unique, domaindis_setup) # SANT/myb domain alone
+elut_viewer("TCPH_HUMAN", short_tidy_unique, domaindis_setup) # skipped, spread out
+elut_viewer("MYH9_HUMAN", short_tidy_unique, domaindis_setup) # skipped, too many peptides
+elut_viewer("SART3_HUMAN", short_tidy_unique, domaindis_setup) # skipped, variable where potential c-term fragment starts
+elut_viewer("IF2B3_HUMAN", short_tidy_unique, domaindis_setup) # Only one case, in HEKR_IEX
+elut_viewer("E41L2_HUMAN", short_tidy_unique, domaindis_setup) # Disordered N along (IEX, SEC)
+elut_viewer("NPM_HUMAN", short_tidy_unique, domaindis_setup) # Nucleophorin c-term alone. Unfortunately SEC smeared
+elut_viewer("BTF3_HUMAN", short_tidy_unique, domaindis_setup) # Looks like proteolysis of n termins
+elut_viewer("IF4B_HUMAN", short_tidy_unique, domaindis_setup) # Skipped, wish it was clearer (TODO remove)
+elut_viewer("ATPA_HUMAN", short_tidy_unique, domaindis_setup)# skipped very smeared
+elut_viewer("HMGB2_HUMAN", short_tidy_unique, domaindis_setup) # Only one in IEX1 R
+elut_viewer("CLIP1_HUMAN", short_tidy_unique, domaindis_setup) # internal split only in IEXs
+elut_viewer("HNRPM_HUMAN", short_tidy_unique, domaindis_setup) # only in iex, RRM alone
+elut_viewer("SYYC_HUMAN", short_tidy_unique, domaindis_setup)# trna binding alone. Only seen in IEX, and SEC is smeared
+elut_viewer("FKBP4_HUMAN", short_tidy_unique, domaindis_setup) # small disordered c alone in one iex
+elut_viewer("IF4G1_HUMAN", short_tidy_unique, domaindis_setup) # skipped, complex pattern
+elut_viewer("CALD1_HUMAN", short_tidy_unique, domaindis_setup) # final 100 disordered alone, SEC and IEX
+elut_viewer("DHX9_HUMAN", short_tidy_unique, domaindis_setup) # Loss of first rna binding domain, SEC and IEX
+elut_viewer("UBP2L_HUMAN", short_tidy_unique, domaindis_setup) # skipped, complex pattern
+elut_viewer("WDR44_HUMAN", short_tidy_unique, domaindis_setup) # iex, clear loss before wdr domains at 500
+elut_viewer("DDX46_HUMAN", short_tidy_unique, domaindis_setup)# loss of c term diso in iex
+elut_viewer("ZCCHV_HUMAN", short_tidy_unique, domaindis_setup) # skipped, complex pattern
+elut_viewer("SUV3_HUMAN", short_tidy_unique, domaindis_setup) # loss of disordered c, iex and sec
+elut_viewer("ATX2L_HUMAN", short_tidy_unique, domaindis_setup) # right before ataxin-2 c terminal
+elut_viewer("DDX17_HUMAN", short_tidy_unique, domaindis_setup) # iex loss of n and c disordered
+elut_viewer("NOB1_HUMAN", short_tidy_unique, domaindis_setup) # skipped, low coverage
+elut_viewer("SMRC1_HUMAN", short_tidy_unique, domaindis_setup) # SMARCC n-terminal alone, both iex
+elut_viewer("IDH3B_HUMAN", short_tidy_unique, domaindis_setup) # at 150. Mid domain candidate? Maybe isoform C? alternate c reading frame
+elut_viewer("KCRU_HUMAN", short_tidy_unique, domaindis_setup) # skipping not clear
+elut_viewer("GLU2B_HUMAN", short_tidy_unique, domaindis_setup) #iex only
+
+
+elut_viewer("CBR1_HUMAN", short_tidy_unique, domaindis_setup) # skipped, dont' see it
+elut_viewer("IF4G2_HUMAN", short_tidy_unique, domaindis_setup) # complicated, inconsistent
+elut_viewer("PP1R7_HUMAN", short_tidy_unique, domaindis_setup) # skipped, don't see it
+elut_viewer("ENAH_HUMAN", short_tidy_unique, domaindis_setup) # lost of vasp tetrametization in one set if iex
+elut_viewer("ATX2_HUMAN", short_tidy_unique, domaindis_setup) # skipped unclear breakpoints, 
+elut_viewer("HBS1L_HUMAN", short_tidy_unique, domaindis_setup) # split at domain. iex def, maybe sec too
+elut_viewer("GLRX3_HUMAN", short_tidy_unique, domaindis_setup) # skipped, don't see it
+elut_viewer("RPN2_HUMAN", short_tidy_unique, domaindis_setup) # maybe should skip. potential c term, only in sec, and it's bigger
+elut_viewer("PSA2_HUMAN", short_tidy_unique, domaindis_setup) # skipped, don't see it
+elut_viewer("RBP2_HUMAN", short_tidy_unique, domaindis_setup) # very complex protein domain org
+elut_viewer("IMB1_HUMAN", short_tidy_unique, domaindis_setup) # skipped, may be abundance related pattern
+elut_viewer("LARP4_HUMAN", short_tidy_unique, domaindis_setup) # confusing pattern
+elut_viewer("NT5D2_HUMAN", short_tidy_unique, domaindis_setup) # skipped, don't see it
+elut_viewer("GEMI5_HUMAN", short_tidy_unique, domaindis_setup) # skipped, don't see it
+elut_viewer("IRS4_HUMAN", short_tidy_unique, domaindis_setup) # not great, maybe disordered c terminus alone
+elut_viewer("VINC_HUMAN", short_tidy_unique, domaindis_setup) # skipped, don't see it
+elut_viewer("K1C9_HUMAN", short_tidy_unique, domaindis_setup) # skipped. smeared, looks like super abundant c disordered teminus alone
+elut_viewer("PDXD1_HUMAN", short_tidy_unique, domaindis_setup) # SEC disordered c-terminus alone, eluting much larger than rest of prot
+elut_viewer("ANK1_HUMAN", short_tidy_unique, domaindis_setup) # Only seeing c-term in the hemolysate
+elut_viewer("PSA3_HUMAN", short_tidy_unique, domaindis_setup) # skipped, don't see it
+elut_viewer("MOES_HUMAN", short_tidy_unique, domaindis_setup) # skipped, don't see it
+elut_viewer("GLGB_HUMAN", short_tidy_unique, domaindis_setup) # glycosyl hydrolase family 13, missing c -terminus a/b part
+elut_viewer("DSC1_HUMAN", short_tidy_unique, domaindis_setup) # cadherin with and without cytoplasmic c-terminal domain
+elut_viewer("HPRT_HUMAN", short_tidy_unique, domaindis_setup) # skipped, I don't see it
+elut_viewer("RD23A_HUMAN", short_tidy_unique, domaindis_setup) # potentially missing ubl domain at n-term. not confident
+
+
+
+#elut_viewer("TPR_HUMAN", short_tidy_unique, domaindis_setup) # C term disordered only in one hemolysate
+#elut_viewer("EIF3B_HUMAN", short_tidy_unique, domaindis_setup) # N terminaal disordered distintly only in hemolysate
+#elut_viewer("HNRPU_HUMAN", short_tidy_unique, domaindis_setup) # w and wo N terminal SAP domain
+#elut_viewer("A0A2K3D8D3_CHLRE", short_tidy_unique, domaindis_setup) # dynein, skipped, not many counts
+#elut_viewer("SRC8_HUMAN", short_tidy_unique, domaindis_setup) #
+#elut_viewer("SYQ_HUMAN", short_tidy_unique, domaindis_setup) # little messy, skipped
+#elut_viewer("PSMD2_HUMAN", short_tidy_unique, domaindis_setup) # Only 2 peptides, short n terminus, smear
+#elut_viewer("CKAP5_HUMAN", short_tidy_unique, domaindis_setup) # Messy, skipped
+#elut_viewer("RPB1_HUMAN", short_tidy_unique, domaindis_setup) # C-terminal domain alone
+#elut_viewer("PGK1_HUMAN", short_tidy_unique, domaindis_setup) # no, skipped
+#elut_viewer("SPTA1_HUMAN", short_tidy_unique, domaindis_setup) # Only in hemo, protein not in hek. spectrin
+#elut_viewer("SRP72_HUMAN", short_tidy_unique, domaindis_setup) # Broadly smeared disordered c tiny bit
+#elut_viewer("DC1L1_HUMAN", short_tidy_unique, domaindis_setup) # Maybe
+#elut_viewer("A0A2K3D151_CHLRE", short_tidy_unique, domaindis_setup) # Looks like multifunctional enzyme. The solo c-terminus is a full protein in
+#elut_viewer("A0A2K3DSS6_CHLRE", short_tidy_unique, domaindis_setup) # Big weird chlamy protein, 
+#elut_viewer("A0A2K3DNJ8_CHLRE", short_tidy_unique, domaindis_setup) # independent disordered c
+#elut_viewer("MAO2_ARATH", short_tidy_unique, domaindis_setup) # skipped, unclear
+#elut_viewer("A8J5T5_CHLRE", short_tidy_unique, domaindis_setup) # sec31 homolog, w and wo big N terminaltail, but only in IEX
+#elut_viewer("A0A2K3CWM2_CHLRE", short_tidy_unique, domaindis_setup) # SET domain, missing termini
+#elut_viewer("AMOT_HUMAN", short_tidy_unique, domaindis_setup) # With and without n terminus (disordered)
+#elut_viewer("A0A2K3DPC8_CHLRE", short_tidy_unique, domaindis_setup) # skipped, spread out
+#elut_viewer("PUR1_HUMAN", short_tidy_unique, domaindis_setup) # skipped, not clear, maybe loss of C
+#elut_viewer("I1LJ28_SOYBN", short_tidy_unique, domaindis_setup) # skipped
+#elut_viewer("MAP2_HUMAN", short_tidy_unique, domaindis_setup) # Internal domain
+#elut_viewer("SPT5H_HUMAN", short_tidy_unique, domaindis_setup) #
+#elut_viewer("A0A2K3CXE4_CHLRE", short_tidy_unique, domaindis_setup) # weird long disordered chlamy protein
+#elut_viewer("BIG5_ARATH", short_tidy_unique, domaindis_setup) # potentially
+#elut_viewer("PUR6_HUMAN", short_tidy_unique, domaindis_setup) # multifunctioinal enzyme, looks like maybe independent second enzyme
+#elut_viewer("MACF1_HUMAN", short_tidy_unique, domaindis_setup) # unclear, skipped
+#elut_viewer("EIF3A_ARATH", short_tidy_unique, domaindis_setup) # Tail alone
+#elut_viewer("A0A2K3DG19_CHLRE", short_tidy_unique, domaindis_setup) # detached disordered tails
+#elut_viewer("CTR9_HUMAN", short_tidy_unique, domaindis_setup) # Weird, N-terminus (1-27, small beta sheet hairpin according to alphafold) only in hemolysate, c-terminus only in hek
+#elut_viewer("A0A2K3D5B9_CHLRE", short_tidy_unique, domaindis_setup) #
+#elut_viewer("GOGA5_HUMAN", short_tidy_unique, domaindis_setup) # Skipped, just because fragment only one peptide. Anothher hemolysate terminal case
+#elut_viewer("A0A2K3DIA5_CHLRE", short_tidy_unique, domaindis_setup) #
+#elut_viewer("API5_HUMAN", short_tidy_unique, domaindis_setup) # skipped, don't see it
+#elut_viewer("A0A2K3CR90_CHLRE", short_tidy_unique, domaindis_setup) # independent disordered terminus
+#elut_viewer("A0A2K3E781_CHLRE", short_tidy_unique, domaindis_setup) # w and wo last two peptides, disordered
+#elut_viewer("PPWD1_HUMAN", short_tidy_unique, domaindis_setup) # skipped, unclear
+#elut_viewer("GCFC2_HUMAN", short_tidy_unique, domaindis_setup) # independent disordered n terminus
+#elut_viewer("PSA1_HUMAN", short_tidy_unique, domaindis_setup) # skipped, unclear
+#elut_viewer("WNK1_HUMAN", short_tidy_unique, domaindis_setup) # skipped, unclear
+#elut_viewer("A0A2K3DS99_CHLRE", short_tidy_unique, domaindis_setup) # yikes, skipped, unclear
+#elut_viewer("IF2A_HUMAN", short_tidy_unique, domaindis_setup) # Wow, complex, c-terminus not in HEKR samples
+#elut_viewer("CRWN1_ARATH", short_tidy_unique, domaindis_setup) # independent disordered c
+#elut_viewer("ALBU_HUMAN", short_tidy_unique, domaindis_setup) # All abundance based, skipped
+#elut_viewer("A0A2K3DAR1_CHLRE", short_tidy_unique, domaindis_setup) # independent disordered c
+#elut_viewer("HEM6_HUMAN", short_tidy_unique, domaindis_setup) # hard to see, smear or c. skipped
+#elut_viewer("IPO7_HUMAN", short_tidy_unique, domaindis_setup) # independent disordered c
+#elut_viewer("HSP7E_ARATH", short_tidy_unique, domaindis_setup) # skipped, not enough peptides in N
+#elut_viewer("XPO7_HUMAN", short_tidy_unique, domaindis_setup) # skipped, unclear
+#elut_viewer("CUL4B_HUMAN", short_tidy_unique, domaindis_setup) #  skipped, unclear
+#elut_viewer("DDX6_HUMAN", short_tidy_unique, domaindis_setup) # independent disordered N
+#elut_viewer("LMNB1_HUMAN", short_tidy_unique, domaindis_setup) # independent lamin tail
+#elut_viewer("Q695H0_CHLRE", short_tidy_unique, domaindis_setup) # skipped, unclear
+#elut_viewer("A0A2K3DGH0_CHLRE", short_tidy_unique, domaindis_setup) # skipped, not enough fragment peps
+#elut_viewer("USO1_HUMAN", short_tidy_unique, domaindis_setup) #skipped, unclear
+#elut_viewer("A0A2K3DRP3_CHLRE", short_tidy_unique, domaindis_setup) # split n and c
+#elut_viewer("VIGLN_HUMAN", short_tidy_unique, domaindis_setup) # skipped, unclear
+#elut_viewer("A0A2K3DDM6_CHLRE", short_tidy_unique, domaindis_setup) # skipped, unclear
+#elut_viewer("BICD2_HUMAN", short_tidy_unique, domaindis_setup) # IEX missing N-terminus disordered
+#elut_viewer("CCAR1_HUMAN", short_tidy_unique, domaindis_setup) # skipped, unclear
+#elut_viewer("OLA1_HUMAN", short_tidy_unique, domaindis_setup) # N terminal WVF domain alone
+#elut_viewer("A0A2K3DIH9_CHLRE", short_tidy_unique, domaindis_setup) # skipped, unclear
+#elut_viewer("SRRM1_HUMAN", short_tidy_unique, domaindis_setup) # C-term fragment
+#elut_viewer("CLPB_HUMAN", short_tidy_unique, domaindis_setup) # independent n terminus
+#elut_viewer("A0A2K3D1Z8_CHLRE", short_tidy_unique, domaindis_setup) #  skipped, unclear, could be inverse
+#elut_viewer("A0A2K3D5N4_CHLRE", short_tidy_unique, domaindis_setup) # IF2B, independent N-terminus
+#elut_viewer("FCL_HUMAN", short_tidy_unique, domaindis_setup) #  skipped, unclear
+#elut_viewer("COPG_ARATH", short_tidy_unique, domaindis_setup) # clear second domain alone, but only IEX
+#elut_viewer("RL7A_HUMAN", short_tidy_unique, domaindis_setup) # skipped, unclear, fragment too small
+#elut_viewer("STAU1_HUMAN", short_tidy_unique, domaindis_setup) # skipped, unclear, fragment too small
+#elut_viewer("A0A2K3CXP1_CHLRE", short_tidy_unique, domaindis_setup) # see if present in arabidopsis
+#elut_viewer("RIR2_HUMAN", short_tidy_unique, domaindis_setup) # skipped, unclear, fragment too small
+#elut_viewer("PGTA_HUMAN", short_tidy_unique, domaindis_setup) #  skipped, low abundance
+#elut_viewer("RFC1_HUMAN", short_tidy_unique, domaindis_setup) # solo disordered n-terminus
+#elut_viewer("A8HNE8_CHLRE", short_tidy_unique, domaindis_setup) # skipped, unclear
+#elut_viewer("SR140_HUMAN", short_tidy_unique, domaindis_setup) # skipped, low abundance
+#elut_viewer("Q5G8B9_CHLRE", short_tidy_unique, domaindis_setup) #  independent n
+#elut_viewer("A8I7P5_CHLRE", short_tidy_unique, domaindis_setup) #solo c-terminus only iex
+#elut_viewer("HDGR2_HUMAN", short_tidy_unique, domaindis_setup) # skipped, unclear, potentially c-terminus
+#elut_viewer("A0A2K3DLF7_CHLRE", short_tidy_unique, domaindis_setup) # solo c-terminus
+#elut_viewer("A0A2K3D4J1_CHLRE", short_tidy_unique, domaindis_setup) # helicase, independent disordered
+#elut_viewer("DDX5_HUMAN", short_tidy_unique, domaindis_setup) ## Mayybe n-terminus independent
+#elut_viewer("SGT1B_ARATH", short_tidy_unique, domaindis_setup) # independent c
+#elut_viewer("A8ITL0_CHLRE", short_tidy_unique, domaindis_setup) #
+#elut_viewer("SF3B2_HUMAN", short_tidy_unique, domaindis_setup) # SAP domain alone
+#elut_viewer("ALDR_HUMAN", short_tidy_unique, domaindis_setup) # skipped, unclear
+#elut_viewer("A0A2K3DHY5_CHLRE", short_tidy_unique, domaindis_setup) # independent c disordered
+#elut_viewer("NCKP1_HUMAN", short_tidy_unique, domaindis_setup) # skipped, unclear
+#elut_viewer("SF3B1_HUMAN", short_tidy_unique, domaindis_setup) # independent n
+#elut_viewer("SSRP1_HUMAN", short_tidy_unique, domaindis_setup) # maybe, unclear, skipped
+#elut_viewer("BAG6_HUMAN", short_tidy_unique, domaindis_setup) # maybe, unclear, skipped
+#elut_viewer("DKC1_HUMAN", short_tidy_unique, domaindis_setup) # unclear, skipped
+#elut_viewer("A0A2K3CYR7_CHLRE", short_tidy_unique, domaindis_setup) # with and without long n-terminal extension disordered
+#elut_viewer("A0A2K3DZQ4_CHLRE", short_tidy_unique, domaindis_setup) #  maybe, unclear, skipped
+#elut_viewer("LRRF1_HUMAN", short_tidy_unique, domaindis_setup) # c-terminal, only one hek iex
+#elut_viewer("Q9SL09_ARATH", short_tidy_unique, domaindis_setup) # skipped
+#glut_viewer("A0A2K3CW82_CHLRE", short_tidy_unique, domaindis_setup) # skipped
+#elut_viewer("SYKC_ARATH", short_tidy_unique, domaindis_setup) # Just disordered N-termins
+#elut_viewer("PCNT_HUMAN", short_tidy_unique, domaindis_setup) # Not enough peptides in fragment, skipped
+#elut_viewer("A8JGV6_CHLRE", short_tidy_unique, domaindis_setup) #
+#elut_viewer("A0A2K3CQ83_CHLRE", short_tidy_unique, domaindis_setup) # N-terminal CBM only iex
+#elut_viewer("RU17_HUMAN", short_tidy_unique, domaindis_setup) # SEC, IEX c-terminal disorder
+#elut_viewer("SC23A_HUMAN", short_tidy_unique, domaindis_setup) #unclear, skipped
+#elut_viewer("UBA3_HUMAN", short_tidy_unique, domaindis_setup) # C-terminal E2 Binding. Demonstrates issue of fraction resolution
+#elut_viewer("A0A2K3CRG0_CHLRE", short_tidy_unique, domaindis_setup) # unclear, not enough peptides, skipped
+#elut_viewer("A0A2K3CXL2_CHLRE", short_tidy_unique, domaindis_setup) #  N-terminal disorder only iex
+#elut_viewer("K7KQN4_SOYBN", short_tidy_unique, domaindis_setup) # Very clear split! also in TC159_ARATH
+##elut_viewer("FXR1_HUMAN", short_tidy_unique, domaindis_setup) # unclear, skipped
+#elut_viewer("YBOX3_HUMAN", short_tidy_unique, domaindis_setup) # unclear, skipped
+#elut_viewer("SOQ1_ARATH", short_tidy_unique, domaindis_setup) # skipped, hard to categorize
+#elut_viewer("A0A2K3DPU1_CHLRE", short_tidy_unique, domaindis_setup) # skipped not enought peptides
+#elut_viewer("A8ITS8_CHLRE", short_tidy_unique, domaindis_setup) # biotin attachment +/- enzyme
+##elut_viewer("THOP1_HUMAN", short_tidy_unique, domaindis_setup) #  unclear, skipped
+#elut_viewer("SRRT_HUMAN", short_tidy_unique, domaindis_setup) #  skipped, hard to categorize
+#elut_viewer("CCD94_HUMAN", short_tidy_unique, domaindis_setup) #  skipped, hard to categorize
+#elut_viewer("IQGA1_HUMAN", short_tidy_unique, domaindis_setup) # skipped, hard to categorize
+#elut_viewer("XRCC5_HUMAN", short_tidy_unique, domaindis_setup) # unclear, skipped
+#elut_viewer("ALKB5_HUMAN", short_tidy_unique, domaindis_setup) # skipped, not abundant
+#elut_viewer("ACO2M_ARATH", short_tidy_unique, domaindis_setup) # missing n terminus unstructure
+#elut_viewer("A0A2K3CXH6_CHLRE", short_tidy_unique, domaindis_setup) # Only internal disorderd
+#elut_viewer("PDS5B_HUMAN", short_tidy_unique, domaindis_setup) # skipped, not abundant
+#elut_viewer("UTRO_HUMAN", short_tidy_unique, domaindis_setup) #  unclear, skipped
+#elut_viewer("EEA1_HUMAN", short_tidy_unique, domaindis_setup) #unclear, skipped
+#elut_viewer("GSTM3_HUMAN", short_tidy_unique, domaindis_setup) # Maybe just c terminal domain
+#elut_viewer("INT3_HUMAN", short_tidy_unique, domaindis_setup) # Very complex profile
+#elut_viewer("SYHC_ARATH", short_tidy_unique, domaindis_setup) # unclear, skipped
+#elut_viewer("EIF2A_HUMAN", short_tidy_unique, domaindis_setup) # unclear, skipped
+#elut_viewer("GSTO1_HUMAN", short_tidy_unique, domaindis_setup) #  unclear, skipped
+#elut_viewer("A0A2K3DIM4_CHLRE", short_tidy_unique, domaindis_setup) # skipped, not abundant
+#elut_viewer("A0A2K3DSC4_CHLRE", short_tidy_unique, domaindis_setup) # n vs c
+#elut_viewer("A0A2K3DBH6_CHLRE", short_tidy_unique, domaindis_setup) # skipped, not abundant
+#elut_viewer("CDC37_HUMAN", short_tidy_unique, domaindis_setup) # not great, maybe cdc37 c-term alone
+#elut_viewer("DIAP1_HUMAN", short_tidy_unique, domaindis_setup) # not abundant enough, skippe
+#elut_viewer("NU155_HUMAN", short_tidy_unique, domaindis_setup) #  unclear, skipped
+#elut_viewer("SC31A_HUMAN", short_tidy_unique, domaindis_setup) # alone c-terminal disorder
+#elut_viewer("A0A2K3D117_CHLRE", short_tidy_unique, domaindis_setup) # c-term fragment alone
+#elut_viewer("A8IR41_CHLRE", short_tidy_unique, domaindis_setup) #  c-term disorder fragment alone
+#elut_viewer("A8IRX8_CHLRE", short_tidy_unique, domaindis_setup) # n-term disorder fragment alone
+#elut_viewer("IWS1_HUMAN", short_tidy_unique, domaindis_setup) # 
+#elut_viewer("O49822_CHLRE", short_tidy_unique, domaindis_setup) # unclear, skipped
+#elut_viewer("TCOF_HUMAN", short_tidy_unique, domaindis_setup) #  unclear, skipped
+#elut_viewer("Y2734_ARATH", short_tidy_unique, domaindis_setup) # c-term disorder fragment alone
+#elut_viewer("BGL23_ARATH", short_tidy_unique, domaindis_setup) # messy, skipped
+#elut_viewer("MINT_HUMAN", short_tidy_unique, domaindis_setup) # Mostly n-terminus, very long protein
+#elut_viewer("B3AT_HUMAN", short_tidy_unique, domaindis_setup) #
+#elut_viewer("DC1I2_HUMAN", short_tidy_unique, domaindis_setup) #  unclear, skipped
+#elut_viewer("Q9FFG6_ARATH", short_tidy_unique, domaindis_setup) # unclear, skipped
+#elut_viewer("A0A2K3DIG8_CHLRE", short_tidy_unique, domaindis_setup) # unclear, skipped
+##elut_viewer("FA98B_HUMAN", short_tidy_unique, domaindis_setup) # disordered c-terminus alone, very clear
+#elut_viewer("CRK_HUMAN", short_tidy_unique, domaindis_setup) # Erythrocyte missing last SH3 domain. Isoform Crk-I more in erythrocyte, crk-II in hek
+#elut_viewer("A0A2K3DQV0_CHLRE", short_tidy_unique, domaindis_setup) # low abundance
+#elut_viewer("RL14_HUMAN", short_tidy_unique, domaindis_setup) # not enought abundance, skipped, seems like spread
+#elut_viewer("PRP19_HUMAN", short_tidy_unique, domaindis_setup) # Not clear enough, weird pattern
+#elut_viewer("EPIPL_HUMAN", short_tidy_unique, domaindis_setup) # Epiplakin short form
+#elut_viewer("SAE2_HUMAN", short_tidy_unique, domaindis_setup) # N-term alone
+#elut_viewer("A0A2K3DR92_CHLRE", short_tidy_unique, domaindis_setup) # disordered N-term alone
+#elut_viewer("ATG3_HUMAN", short_tidy_unique, domaindis_setup) # unclear, skipped
+#elut_viewer("EXOSX_HUMAN", short_tidy_unique, domaindis_setup) #unclear, skipped
+#elut_viewer("A0A2K3D8H4_CHLRE", short_tidy_unique, domaindis_setup) # unclear, skipped
+#elut_viewer("O80576_ARATH", short_tidy_unique, domaindis_setup) #unclear, skipped
+#elut_viewer("AL2C4_ARATH", short_tidy_unique, domaindis_setup) #unclear, skipped
+#elut_viewer("OXSR1_HUMAN", short_tidy_unique, domaindis_setup) # Very clear c-terminus of only OSR domain, check against early draft
+#elut_viewer("CLH1_HUMAN", short_tidy_unique, domaindis_setup) # Skipped, not clear if loss is abundance related
+#elut_viewer("PRS10_HUMAN", short_tidy_unique, domaindis_setup) # Some missing disordered N
+#elut_viewer("A0A2K3DTQ9_CHLRE", short_tidy_unique, domaindis_setup) # disordered c alone
+#elut_viewer("CKAP4_HUMAN", short_tidy_unique, domaindis_setup) # internal bit
+#elut_viewer("MBD10_ARATH", short_tidy_unique, domaindis_setup) # One of just main domain, one of just disorder
+#elut_viewer("A0A2K3D0I5_CHLRE", short_tidy_unique, domaindis_setup) # skipped, not enough peptides
+#elut_viewer("ECI2_HUMAN", short_tidy_unique, domaindis_setup) # Skipped, not clear if loss is abundance related
+###elut_viewer("Q6VTH1_CHLRE", short_tidy_unique, domaindis_setup) #disordered c alone
+#elut_viewer("GTPB1_HUMAN", short_tidy_unique, domaindis_setup) # Skipped, not clear 
+#elut_viewer("A0A2K3DX44_CHLRE", short_tidy_unique, domaindis_setup) # Skipped, not clear 
+#elut_viewer("HECD3_HUMAN", short_tidy_unique, domaindis_setup) #
+#elut_viewer("A0A2K3CZC6_CHLRE", short_tidy_unique, domaindis_setup) # independent disordered C in SEC and IEX
+#elut_viewer("CPIN1_HUMAN", short_tidy_unique, domaindis_setup) # First domain alone, maybe more in HEMO
+#elut_viewer("ADPPT_HUMAN", short_tidy_unique, domaindis_setup) #Skipped, not clear
+#elut_viewer("PPIL2_HUMAN", short_tidy_unique, domaindis_setup) # Example of SEC with only disordered fragment
+#elut_viewer("DHYS_HUMAN", short_tidy_unique, domaindis_setup) #  C-terminus alone
+#elut_viewer("RL23A_HUMAN", short_tidy_unique, domaindis_setup) # One example of disordered N + normal C
+#elut_viewer("6PGD_HUMAN", short_tidy_unique, domaindis_setup) # skipped unclear
+#elut_viewer("S12A2_HUMAN", short_tidy_unique, domaindis_setup) # Not clear if abundance based
+#elut_viewer("A0A2K3DSS4_CHLRE", short_tidy_unique, domaindis_setup) # mess, skipped
+#elut_viewer("A8IQV3_CHLRE", short_tidy_unique, domaindis_setup) # disordered C-terminus alone
+#elut_viewer("NSF1C_HUMAN", short_tidy_unique, domaindis_setup) # skipped unclear
+#elut_viewer("SPAST_HUMAN", short_tidy_unique, domaindis_setup) # skipped unclear
+#elut_viewer("Y3304_ARATH", short_tidy_unique, domaindis_setup) #skipped unclear, missing internal, but disordered termini co-elute
+#elut_viewer("A0A2K3DB52_CHLRE", short_tidy_unique, domaindis_setup) # skipped unclear
+#elut_viewer("PHB_HUMAN", short_tidy_unique, domaindis_setup) # skipped unclear
+#elut_viewer("A0A2K3E663_CHLRE", short_tidy_unique, domaindis_setup) # skipped unclear
+#elut_viewer("DHX57_HUMAN", short_tidy_unique, domaindis_setup) # skipped unclear
+#elut_viewer("MAP1S_HUMAN", short_tidy_unique, domaindis_setup) #skipped unclear
+#elut_viewer("A0A2K3CUY3_CHLRE", short_tidy_unique, domaindis_setup) # messy, skipped
+#elut_viewer("ARHG1_HUMAN", short_tidy_unique, domaindis_setup) # N-terminal domain alone in one
+#elut_viewer("DC1L2_HUMAN", short_tidy_unique, domaindis_setup) # Part of dynein
+#elut_viewer("TI110_ARATH", short_tidy_unique, domaindis_setup) # Disordered c-terminus alone
+#elut_viewer("G6PD_HUMAN", short_tidy_unique, domaindis_setup) # skipped unclear
+#elut_viewer("A0A2K3D3G2_CHLRE", short_tidy_unique, domaindis_setup) # skipped unclear
+#elut_viewer("DPE1_ARATH", short_tidy_unique, domaindis_setup) #  skipped unclear
+#elut_viewer("RAB14_HUMAN", short_tidy_unique, domaindis_setup) # skipped unclear
+#elut_viewer("A0A2K3DYQ1_CHLRE", short_tidy_unique, domaindis_setup) # One shows split
+#elut_viewer("PRP6_HUMAN", short_tidy_unique, domaindis_setup) # skipped unclear
+#elut_viewer("CALX_HUMAN", short_tidy_unique, domaindis_setup) # skipped unclear
+#elut_viewer("PSAA_CHLRE", short_tidy_unique, domaindis_setup) # skipped unclear
+#elut_viewer("GANAB_HUMAN", short_tidy_unique, domaindis_setup) # skipped unclear
+#elut_viewer("ANLN_HUMAN", short_tidy_unique, domaindis_setup) #skipped unclear
+#elut_viewer("RANB3_HUMAN", short_tidy_unique, domaindis_setup) #skipped unclear
+#elut_viewer("A8IFK0_CHLRE", short_tidy_unique, domaindis_setup) # Disordered c-terminus alone
+#elut_viewer("SHOT1_HUMAN", short_tidy_unique, domaindis_setup) # Disordered c-terminus alone
+#elut_viewer("TPIS_HUMAN", short_tidy_unique, domaindis_setup) #skipped unclear
+#elut_viewer("RHG01_HUMAN", short_tidy_unique, domaindis_setup) #
+#elut_viewer("TC159_ARATH", short_tidy_unique, domaindis_setup) # W and w/o membrane anchor
+#elut_viewer("I1KXC0_SOYBN", short_tidy_unique, domaindis_setup) # skipped unclear
+elut_viewer("A0A2K3CN56_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DMQ6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E1E8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E6T0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("DUS3L_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ZN622_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DNLI1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CHRD1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DG81_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("SYWC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SYNC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CSN6_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D4D4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PABP8_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("TLN1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PKN2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RBGPR_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CBPD_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ZC3HF_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D2B6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8I645_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CUL4A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("IGBP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MP2K1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NCBP1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("TRI18_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CMTR1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CYE6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("SYK_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I2BP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("1433T_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CVC5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("TE2IP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SAMH1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("STIM1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NUF2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("AKP13_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DW70_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("TPPII_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("IPO9_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PTN2A_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("HNRPQ_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSIP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RT35_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PP6R3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("C2D1A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DQ88_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ALDOA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("HDGF_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SYG_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D898_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("NUP50_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CAN1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CR10_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DJQ8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D2H8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CRU8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DDA0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ARL3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("B3A2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("FAS_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("WDR81_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CBBY_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("SRPK1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TIC62_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("HMGN5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8I1S7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8ISZ1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("BRD2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DIP2B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CWI5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DJY3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9LXZ4_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("BCLF1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CCHL_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CLPC1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("GRHPR_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D3B3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DMY9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E1U5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8HTX7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PAWR_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PIPNA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PRC2B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PRP31_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSA6_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TALDO_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DRG2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RUVB1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DQG7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DY39_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IHL3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSD11_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TOL6_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("UBE2O_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DJC11_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ZN281_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("UBE4B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("WDR70_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RABE1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("IMA1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DA00_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8I274_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ABCBA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("APC7_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("BCHC2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("CCNA2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PP6R1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSMD6_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SF3A1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SPF45_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SYCC2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("UGPA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CAPR1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DDL6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("FTSZ1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CNZ4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("DEXHC_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("AP3D1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CTNB1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("KAD1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RBM10_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DV67_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CZF3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CISY_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JCP5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("EDC3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PI42A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MAGD2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("VPRBP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DNK6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("KIF15_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RK2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("RS3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PARG_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DD34_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D2L5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PFKA5_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CVC9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DCX4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PCKA_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("CAP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D706_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("FILA2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SLK_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CDV3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("FPPS_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MTND_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TPM4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SPRY4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DCTN1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("OGT1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1LYC1_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("STAT3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CTI6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("STMN1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("BYST_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TOIP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RNZ2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CTQ7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("NP1L4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GCP2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E2C0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("RS6_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TPP2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("EF1G2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("UTP18_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RBNS5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J6C7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E180_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D1A4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DEX7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("C1TC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D9M9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D1S8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("RANG_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D450_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DR83_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ACOX4_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("NONO_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RS11_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DQS0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DYB4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8HX70_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CQA7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CZM3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DRF7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E1N9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ASCC2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("EHD4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("1433B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CUB3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J087_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CPT2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DPOA2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RFC2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RPOM_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("EIF3A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("EFGM_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D8G0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CQ27_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CZJ6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DLW7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("HSP74_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DHX36_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PAIP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9FYU1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("BIEA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D8G2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("K22E_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PLAK_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D268_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ABCF2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ACINU_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PPID_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CO2A1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1JWD6_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TTC4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("K7MAX3_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CRF7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E3Y1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("RINI_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PPCEL_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("THIC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("BRD3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("LACS4_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("NXN_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DRG1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RIR1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JG56_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PNPT1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("XPO5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("HBB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("UBP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CQN4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D3I5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DF59_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("K7M387_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NU98A_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("TPC12_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SSDH_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSMF1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DAJ8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("TF2B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CWL1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("O65655_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DAB3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JGL4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DL29_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("TCP4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RAGP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CSF0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E0E3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E197_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("EFTM_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E347_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PDC6I_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DRS2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E285_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AAT3_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("MBB1A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E1Z6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DCX1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DRT9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E2C7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ACPH_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NAA10_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("P5CS_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PDE12_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D3P2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DII9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8HXA2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PTBP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RBM26_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E193_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DYR4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CHD4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J6D1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PDIA1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("KLC1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CALR_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("EP15R_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1M7D9_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NISCH_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TC753_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("TI442_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D2K4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DXF9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PPM1B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CN41_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSD13_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CUL1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("UBE3A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CQK5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("SEP11_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GNL1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RS17_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("THIL_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IS72_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JH97_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J5Y5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("TEBP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DLDH_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D2S9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DJV6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1L4K9_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ZC3H4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ACBP4_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D5Y6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("C6TAX7_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("LZIC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q93ZS6_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("JAL34_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DH11_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E6E2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("HS105_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DVJ7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CAZA1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NPL41_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("IPYR2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DESP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ENOA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D2B3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DEW1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DMS8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DYW2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E038_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("COPD_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("DPYL5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MYH14_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NNRE_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("OGFD1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DMI5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CLAP2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("OSBP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("UBP7_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CP02_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("1433G_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("EFTU_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("ECHM_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NP214_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D123_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DN72_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PEX14_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("RRP44_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E6E5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D7A4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DGU0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DJ50_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E769_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CSN3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("K7M9L4_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NHRF1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q501F7_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("RS8_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RT05_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SH3L1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ZFP91_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D0X3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ANM3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E7I5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CVN2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DUN0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DG07_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AT1B3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DBNL_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MAOP4_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DCS0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ADAS_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ODP25_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("TKT_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("XRN2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CSCLD_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("HEM1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("G6PI_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CVU3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CI064_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DCD4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D3G3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DAQ3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("HUWE1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DVE4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ADCK3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("APT_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("BRE_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1MIG3_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NSUN2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SYLC_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CPE9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DEQ3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("FKBP3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ADT2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RRBP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E5Y3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AIFM1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9FKA3_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DE83_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1KTK7_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DTQ6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CY50_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DLG9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E8I6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CAND2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RLGPB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SCOT1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TCRG1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8I164_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CUU7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("LGMN_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("FUBP3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PUR8_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("STK26_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DHB12_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("LA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MAN1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IRQ1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1MQL3_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D464_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("BRE1A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("IDE_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ACLY_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GAPD1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RAF1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("EFTU_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DY23_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E587_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("BI2L1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("AP3B1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R0KGG4_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CYN2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E2E6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("NEK9_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PPME1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RAGP1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("UCHL1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("BCL9_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("BSL1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DBK7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("MED24_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NUD16_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DCU6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DGU2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ASPP2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("EI2BB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PRDX4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RTCA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("AFAD_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ATPA_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("MARE1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DIV8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AP2M1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CENPH_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("KIME_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("RO60_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("AHNK_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DAF7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J1M7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1JEV3_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MYO1E_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NCLN_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSB6_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DYI3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("SKP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TOM1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("LDHB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DNJA1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RR5_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DU75_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("LIS1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CHIP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E6F1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("C6T750_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("LONM_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NDRG3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PCNP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ULA1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("EF1D_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("UBA1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CRKL_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("EI2BA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("K7K1N0_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RANB9_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D5L1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ACADM_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("AER_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("EXOC2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q6J4H1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("SYHC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("EIF3J_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E2L2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q84XR9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("RL31_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TRAD1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TF3C4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8HQ77_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ZCH18_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JFP4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CDK4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DHV6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E3X1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("FA65A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1JJL6_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PPCE_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TTC38_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ETFB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CV63_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D7N4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DUV7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("TF3C3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CVZ8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CS043_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DEK_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SRP68_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D7T6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IUV7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DKA3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CATD_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("XPO1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TOM70_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("VATH_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E5I9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CD123_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MCA4_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("RL4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CP46_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DR72_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSD10_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("C6ZS03_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DFK8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("LDHA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CY49_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CXM5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DQN2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DZC7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9FGF3_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("1433F_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CS86_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CVF7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DJU2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DWP5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8HXG8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IA86_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AP1M1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("B9DHK3_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("CDC5L_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DGC14_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("EFTS_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("EFTS_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("FEN1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GORS2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1LIT2_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("KS6A3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NHLC2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TNPO3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TBCA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DP13A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GOGA2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("C1TM_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E3Q9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CLC2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("FLNA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ERO1A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("KPYR_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DZ41_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D1L1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DTD5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("F4J2T9_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("NMT1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("KBP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DKP2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AKA12_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RL19_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RS3A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("AL3F1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("C6TAT2_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9FL95_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("E2AK2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NU205_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSME1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CXE12_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("IMA4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DPOD3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TBCA_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("STRUM_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1LCU6_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NUP88_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SWP70_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CHERP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DUA0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("XRCC6_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CYE9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E7A5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("SNX9_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DBH7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CAND1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CS04_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DZQ6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ACLB1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("AGD7_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("SOAT1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CNK3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D892_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("MDC1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("STRN4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A159YK42_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D7X4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("BRE1B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CND3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RR7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("APEX1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1JFJ9_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ANXA5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SF01_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R0G8R3_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DTH4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DKU5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ERD14_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DI95_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IPE0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("SYIC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R0G721_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R0IRU4_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JF69_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("EYA3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("F4K4Y5_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("FABP5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NPS3A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CD027_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1J675_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PDC10_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CCDC6_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ACACA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("BGAL3_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("ZO2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DAF4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("MIC19_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("BXL6_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("HBA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("UBE4A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D029_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DI58_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8HNJ6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D371_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("HS90A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("OSBP2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSDE_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CNBP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PI4KB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NDUA9_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("SAP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SNX30_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DOCK7_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RFIP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TSNAX_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E434_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DEM9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("DDX54_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("VAT1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E7M4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JES1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("MYL4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NRDC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("K7KZN7_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("C6TMX6_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PDXK_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DCE9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ARI4B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DPOD2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PTPRF_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TBC13_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TKFC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("USP9X_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SYSC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("G3P_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D5L8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E124_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("4EBP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RBP1B_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("CE170_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("E134_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("PP4C_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSMD4_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("BGA10_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("SAC1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R0I1Y7_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ALKB1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ARL6_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ASH2L_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q6PSL5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("SC24C_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SPD2B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("THUM3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R4J2L6_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CTP9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DIE2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("NUMA1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("VPEB_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CPN3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E7C3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E7X5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IWT7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J9H8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1KQ70_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("IF4G3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ILF2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RS10_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DPOE1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NUB1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DEC1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IJJ8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("RL3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NU133_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DQS2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D1C1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9LM78_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CTU0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JAH1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1JMI9_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("F1142_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("COPA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D4U8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CSN5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("FLNC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E5R0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DLH8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DZ39_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("UNG_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Y3126_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DF93_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CPNE3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DBE6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CZX6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("IF2B_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CNS6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CW77_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DPL8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DRY1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DWN1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DY21_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E5M6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("B2L13_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1MFA1_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("LAR4B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MCM3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ODPA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q6QAY3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9XI10_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("SCO2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("THI4_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DE29_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DEA8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PGAM1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J173_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8I011_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("SIN3A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("UCHL5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E076_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CTN7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D8Q4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("NDUAA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ZC3H1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E0R1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PRDX2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SYCC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("STXB1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DB25_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DK06_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DPR9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IYK8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CP74A_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q6SR86_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("SHC1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RR2A_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R4J5C5_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DQ08_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D481_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("NNTM_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SEPT9_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("HN1L_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D3S9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8HQI6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CWC27_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SARM1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("HS90B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DL77_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ANR17_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J646_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("DDX59_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1K0L7_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RTN4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("HEAT3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1LN30_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CW67_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D4L1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DN10_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8HYG6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IWW7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CHLD_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("CLU_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("COQ9_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("LS14A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PPM1F_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RM49_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("UCK2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("VATB2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MAGD1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TXNL1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("OPA1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IWK7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CTBL1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("HEXI1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("WDHD1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DP04_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CN166_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GOLI4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GSHB_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("STIP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CLPP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSMG1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("FUMH_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PLAP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DR79_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("RL32_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CRY4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CTM0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CXZ4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8ITK6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JEG6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ADNP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ARFG1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CM2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("CXXC1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DCAF8_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DCTN4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DHX15_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DYR_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GDE_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1JV14_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NELFA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSMD4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RM04_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RM45_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SAHH_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TATD1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TBCD4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("XIAP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DHS8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("WDL4_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D4N6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CVC7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DDR4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E5C9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CD48A_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("KIF2C_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DN52_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DMK6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DX48_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JD64_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8HXE1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IW44_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DVL4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("UBE2S_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CXT7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8HTU8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9XI87_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("U5S1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NU153_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RIC8A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PRS4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MPPB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D465_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D5V4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E2U2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CIAO1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CNN3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CUL3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DNJA2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("F4K3A9_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("SBDS_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NOLC1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DCH9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D823_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DD80_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DVL6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("HNRPL_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DWZ7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1KQE8_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A2MG_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TOM40_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NIC4_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9LK47_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("SUR1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CUF3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DHZ1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ROA3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ESTD_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9FM97_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CXE1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DNS9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E243_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E4D2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8I175_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8I4H4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J0D6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("HDAC1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("HMOX1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1LPJ9_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NDRG1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NENF_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PRUNE_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PYM1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RL36_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("UREA_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E700_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E7E2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("COPE_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("EGLN1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TRIPC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PLOD1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NP1L1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D4C3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DUF9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E7Z1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("TB182_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E613_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DL40_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("RRFC_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("SP16H_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("STML2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSB7_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D9Q2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ALFP3_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DMB8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1NFX6_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("IF2B2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DZ45_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JB67_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("GYS1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9LYG2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DA82_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("IF5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SNP29_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("THIM_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E181_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AHSP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("VATA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DDV4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DUZ8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IGY1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JF62_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1NAI7_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("OSBL1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RPC4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SYPM_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("FLII_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("IVD_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D3B8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("FND3A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CORO7_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DNX1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DAI6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ACSF2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PUX4_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("Y2267_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("UMPS_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MDN1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSMD3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JBC6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CUQ6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E5K9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("FABG_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("PWP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SIR2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DDX8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CHLB_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CLGN_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PIN1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IHI1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IWB5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D4W4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("EIF1A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DUD3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8HYH4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JDR3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CAPP3_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("HNRPD_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MDHC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("HSP7G_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("STRN3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J4Z4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("COR1C_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DVA8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("DSRAD_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ASPC1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("JAL5_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("PELP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CSP4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("RN214_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1LIN2_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DLZ2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IMK5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ZFR_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R0JJR3_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("INO1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DDI2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CS97_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AKAP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DRH5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ADK_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CNQ9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("JAL33_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CTC6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CYL8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DVY2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8ICG2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ACCO4_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("ARK72_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("C6TJH2_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("IMA3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NMT1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("TPP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R0JCW2_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R4J4T3_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CPX6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D415_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DKJ4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DLB7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DLI6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DMP2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DS20_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DUC1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DYG2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J664_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ACTN4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("AP2B1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ATIF1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ATP5H_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CATA1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("CHD1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CYF_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("ENPP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GALK1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("GEPH_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1KCL6_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1L6U0_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1L9P5_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("IKIP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NU50A_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSBD_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("RL18A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SON_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SYDC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TACC3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ZYX_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("LETM1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CS90_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("P3H1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RL10A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DMA3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E7T6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("EMAL4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DZ62_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("MEP50_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RL7_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DW10_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("KPRA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SH3G1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CSDE1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PRP8_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R0I9G1_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CQC6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DF64_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8HUP3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CHM4A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1KPW8_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D6E0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R0HHC1_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("AP1G1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9LJ94_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("TRXM1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("ZRAB2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TCPG_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GCSP2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D4Y7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E045_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9FLH2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("AL7B4_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("CBP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DLM8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("TAT_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("PUM1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1JSE2_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DH76_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DCU4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("EPN1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DQP7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E021_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("WBP2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PAP85_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("TBC15_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CNG5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DTH0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E6J0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CLAP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J2Q0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R4J2Q1_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D8L7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JCZ5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1LQ66_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9LLJ1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("SMC2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TCTP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("HSDL2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E3F4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ANK2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SYAP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CX44_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DP91_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DSL4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E3K1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IWL4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ALDOC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("AMPB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ARPC3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CO4A2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CUL2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DHX16_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DMD_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("FBX7_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PRKRA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9C7V7_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CTS3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1KY45_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MRE11_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R0EIR6_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D103_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("RL28_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TIF1A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JCR1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("MAP22_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("SRA1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TPD52_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("AL1B1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D159_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D8C9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("EBM_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J7L1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("TCPD_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TWF1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RD23B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TIM44_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("KPYM_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DYN2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ABCE1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PA2G4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PIPNB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("K2C78_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("AAT2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("DPP3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("EWS_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SERC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8I2V3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D8S7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("DCP5_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("BASP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RAD50_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JC04_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DEL6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DQF8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DU33_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E009_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ARP3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("C6TNT2_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("FKB10_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1KXE7_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("K7MKF1_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MPI_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NDUAD_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PPP6_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RNF14_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RS16_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("S27A4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SRSF9_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TCF25_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E6H6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("IPYR_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E560_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D8M6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("DDX3X_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PUS7_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TOM34_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IPZ5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("SPTB1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TSR1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("BXL1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("LYAG_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PPM1G_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CCAR2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("KDM3B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CQX9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D011_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DT03_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DZR4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E5Y2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8ILX2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q2Q021_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RBM8A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SPRE_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RPI3_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DVI2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JFB1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D5A0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("SPTN1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E1R0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JCA8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D3X9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("MMS19_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DQ55_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D060_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DDK1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DN34_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DY02_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E3G0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CSN2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GGA1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PAF1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TRM1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IDN1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DL88_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("COF1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GLUT1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("QSER1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MBD3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DPT2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CH10_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9SUB2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("ZN318_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D0S8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DTW6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1K055_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("K7MB33_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SIR5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("VRK2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NDUV1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D2P1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D4X2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DCF4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DWT5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A9XPA7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSME3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q3HTK4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("REPI1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SMC4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SYMC_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("TNPO1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TSC2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JI07_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CHD8_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("LZTL1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ZZEF1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IIK4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("SET_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("F4ISU2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("UBP5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PAE3_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("PFD6_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J3E3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("NSF_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SGAT_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CTE3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IL08_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("K7K770_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("KRI1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSMD8_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D9G3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DLV6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("LEO1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CYL1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DIA7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1MHR0_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("UAH_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CND6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CU80_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DIR4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DJD0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DSQ8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DV02_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DYN4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8I7N8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J9E6_CHLRE", short_tidy_unique, domaindis_setup) 
+elut_viewer("AN32B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ARP2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CC124_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("FUBP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GLCNE_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GME_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("GSK3A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("KCD12_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("KLDC4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("LRP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("LTN1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MAT2B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MCTS1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MVD1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PPIL4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSMD7_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8HN94_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1ND31_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q4U0V9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("SSY1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("TTF2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DAXX_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DPP9_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SGTA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PDC2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("K7L0V1_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("G6PIP_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D760_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("RPIA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DN74_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DVV8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DZW8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("DCTP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("K7L5V1_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("OTU6B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RENT2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RS5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CQ32_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DIS4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PDIP3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PNCB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TR150_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DAI3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CPI0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DF21_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DYE1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E6T3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JDN4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ESYT2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MCM5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SF3A1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("HD_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CTD6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8I3B1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AKP8L_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DHSO_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1L922_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1MY29_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1N6M9_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ISPD_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("K7MGK0_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ML423_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("NPC2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9LHA6_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("QCR7_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ROA0_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CNQ0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("SRSF4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("HF101_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("RM01_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TRI25_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("AMPL_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DFFA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CYK3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D7E0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J3C7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AN32A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CHM2B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CPL3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E5V1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JFK6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ECSIT_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GCN1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("HN1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("HNRH2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PAPOA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RU2B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TRPD_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CR29_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CDK12_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TPPC8_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("C6T081_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9FE86_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J8Z1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CW95_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DB62_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("APC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1M5M5_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("O48949_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("QRIC1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RENT1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSB1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PLST_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JD56_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PDIA3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("HDAC2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DWW8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("SYUA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SOX_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("2A5D_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IPD5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("HNRL1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1LVF3_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RED_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J5A8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PLK1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CN34_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DQ91_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CADH7_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("IPYR2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("STY8_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("WDR4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("FAF1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MP2K2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8ILP2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ABHDA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PDIA5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TRIO_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CNNM3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1K3J0_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DVM6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R0H9D3_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("UBP10_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DKT2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DR27_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AK1A1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CSN4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("U520_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SC24D_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SSDH_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D4C9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D545_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DJC2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DRH0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DYE8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E4Y8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AGD6_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("C6TDP1_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ECE1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("EI2BE_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("FERM2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("IPO11_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("OSBL9_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PTCD3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RNH2A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SYCM_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ZC11A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R0GE22_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CWF7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D5W6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DBL2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DEF6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DLV0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DMQ1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E8I5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J9Q1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AAAT_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ARNT_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("C19L1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CD2AP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CML27_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("DNJ36_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("DX39A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ERLN1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("F175B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("HIRP3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1KZI4_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PAK2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSA4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9LTX7_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("RAVR2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SUGP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("UBR4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("FKB15_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CNO10_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PRDX6_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8HSJ6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("DHX37_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("F4HU51_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1LEI9_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("LAP2B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PGRC2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSA5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TPL_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DF58_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PRKDC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CTND1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RL29_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8ITQ1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CSZ7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E811_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1NCF0_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8I8K4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("K2C5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CNP1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DJB5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DVW4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("EBFC2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1JEW0_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CPC6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DEF5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JF72_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ZN598_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NIA2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("NFXL1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSPC1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RCC2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E877_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ODPA2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q2MJW1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("RPA34_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("BZW2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ALDH2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DXU4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("FHOD1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DSK9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1M322_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TRIP6_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DV96_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IJ79_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("DHFS_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E0L8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("GT251_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D431_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DEZ2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DUD4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E1G8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E637_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8HRQ4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8HYD5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AP1B1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ASPG1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("BLMH_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("BLVRB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CNDH2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CRLF3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1MYQ8_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("METK2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PUR4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RRP1B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RS14_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TATD3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Y3288_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IAT7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("NU214_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GBLPA_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("LEUC_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R0I7Q2_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CALR2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("PUR9_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CS95_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DSL2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D3Z6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D6P5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DF61_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1M540_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RAVR1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RB6I2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RLA0_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SMRCD_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D7E4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DA87_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DZU4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("FKB13_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("MEPCE_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CVA7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DEH3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IFZ9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("SARNP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("BCR_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("F10AL_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J5Z0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("SODC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ENPL_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IQB8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JEL2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JHR9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ALFC5_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("CLPR2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("LRC59_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SCRN2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TTC1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("LASP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CWD4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E6Q3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E7J2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1NH15_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MESD_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PCYOX_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PRDX5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RM39_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SMG8_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D5H2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DJ43_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J980_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("BABA1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DCPS_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1KXB7_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1NHW4_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9FJW0_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("RBM14_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DEQ6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DKF3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DKZ4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8HS05_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("BT3L4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CAB45_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("IMA5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NUFP2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q8VYV0_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9LK96_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("REN3B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SPP2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("NDC80_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("USP_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DJA5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D992_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DHU8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CT42_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DN68_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AFG32_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ELOB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D385_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CTL2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D6I2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DKV2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DRP7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DU19_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E1D1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E7B5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8I2E0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("BGL42_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("C6TLT7_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CPSF2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DPOE3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ETFA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1JUC2_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1LEE5_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ITCH_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("K7MWZ2_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("LANC2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MARK2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("S12A7_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SNW1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SPSY_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ZCHC3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CATB3_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("NC2B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NADAP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D764_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CNPY2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NSF_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9ZVS4_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("RS13_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("T2FB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ACDSB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("HNRPC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MVD1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("NDUB7_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("O23157_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("SERB1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IMN5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("IPO4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IDE6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("RCCR_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("SC24A_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("ZCCHL_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSMD1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E2J1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IZZ9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ATPB_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PRS6B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TP53B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NTKL_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CZU5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DR43_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E0V9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("IF4G2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CPC0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ABA2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSBB_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("GSHRP_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("SAE1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D661_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("DSG1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SYLM_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CSH6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D8M7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D991_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IZU4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JHC3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("BID_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CARF_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GDIA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GWD1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("RAB1A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ATPB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("COPG1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RTCB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PYR1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DNJC7_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CZ00_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ARMC1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("O65502_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSBA_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PABP2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CZB4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E2Z3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("EF1A2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GLN15_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1M292_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NHRF2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q8H0S3_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("RIBA1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("SDRA_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("TMED9_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DNJC8_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D0M7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IKQ6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("GPTC4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PUR_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DBM9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8HSU7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AR2BP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("C6T3P3_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("EPN4_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MIRO1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("TPR2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A2PZC0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D212_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DD08_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E750_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IVP1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AMPP2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("SC23B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DJC3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DR24_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8I247_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1JPT3_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ITB1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("K7LB94_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CNV4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DB71_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DV10_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8HQ97_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J4N7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AB4F_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("CPNE1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DHQSD_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("HIBC6_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("HNRH1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("LIMD1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MPCP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RL15_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RR2B_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("RUAP_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DSC2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E5R9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JH58_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9FPR7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("C2D1B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TAGL2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("D4N5G0_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("AGAL_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("FHL1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DC06_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PCBP2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("AIDA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GPKOW_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("HDDC2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("IMA7_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DQQ7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("YTHD2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MAP1B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8I0Y2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("GLSK_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DFA0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R0FBT0_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D5W9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DGS6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E380_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8HP90_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CSP3_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("MK01_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MYPT1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NCPR_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("OSGEP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TCAF1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ZW10_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SNX2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SRPRB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JAC5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q8VZ23_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CQA0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DBD8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DLD9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DRJ8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DSH7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CPNS1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NDUV2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NU160_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PRI1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9FN21_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("TRM9_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("UGGG1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DHJ2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DEY4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CISY4_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("DIDO1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E3I8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ASNS_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CRBG3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("STXB2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R0FN16_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CT67_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CYQ5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E4Q6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J195_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A9ZNH0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("APBB1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("F4HWC3_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("HTR5B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1KH24_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("LACB2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MRCKB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RT34_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("HTSF1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PP4R2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q5XVC2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("SF3A3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NOSIP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("STAT1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IVD4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("RL13_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("COF2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GSHB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MILK1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SDHA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("BGAL_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("COR1B_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9FN44_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("U91B1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JGK5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ACO3M_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D425_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("BIRC6_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PCNA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PEX19_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MDHM_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ILF3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CHLI1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("HS905_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CP34_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CV86_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D6M4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D9L7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DRH6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8IYA1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J3X9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ALKB2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CIC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DCAF7_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DOT2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("FIP1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1JI54_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1MYV2_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NOP58_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PURA2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q6V9B3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("RCC1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TFG_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("IF4E4_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("ANKH1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J9F3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R0JTF7_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E620_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("SNX1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("STXB3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("K2C1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8J3F9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D9V7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("CP41A_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1NC67_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q8LL91_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("UBAC1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PTPA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SLMAP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D2Y6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DBF1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("ADA_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("COPB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DNM1L_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("F26_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("GRWD1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("WASH7_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8ITH3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("K7K9Y5_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SIAS_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D9K7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DRA0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("PPIH_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CUA8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D4W9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D574_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E3N1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1J4S3_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MTDC_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RK14_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SETD7_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TPLAT_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("TR164_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E3B2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AT2A2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CCDC8_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E652_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8I029_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("APC1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("GSTUG_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("MTHR2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("RABL6_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DM03_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DQN7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DR25_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E312_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JHN0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AN32E_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("C6T883_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PTA16_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("K7KLB5_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MTAP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ORN_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DAM4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("MO4L1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ECH1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TIPRL_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E3P4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DNJ3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("DICER_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NCOR1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D470_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("HYOU1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A0R0FB29_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CQ62_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CSU9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CVJ1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CVP8_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CWC1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3CZ10_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D0V0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D140_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D1A2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3D8W6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DC16_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DCH6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DE69_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DGL7_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DH09_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DNZ9_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DS37_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3DYQ4_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E2T3_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E2Y0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E6L6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E6M5_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E7B1_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A0A2K3E7Z6_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8I1T0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JBY2_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("A8JGH0_CHLRE", short_tidy_unique, domaindis_setup) #
+elut_viewer("AB6I_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("ARFG2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("BCCIP_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("BRM_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("BRO1_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("CL043_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("CUL5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DCP1A_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("DJC21_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("ECHB_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("EPHA2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("EXOS9_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("FMR1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("FOCAD_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("HIS3_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("HMGCL_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1JAQ7_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1K7W5_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1KH61_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1KTY1_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I1LIY4_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("I2BP2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("IF4E_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("K7MVC1_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("L2HDH_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MARC1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MFN2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MPRI_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("MTMR1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NELFE_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("NOTC2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("OSB11_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PGAM5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PIMT_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PNPH_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("PNSL5_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("PSF1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q42785_SOYBN", short_tidy_unique, domaindis_setup) #
+elut_viewer("Q9FFW8_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("RT27_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("RTF1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SGT1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SMHD1_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("STX18_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("SYAM_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TERF2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TKTC2_ARATH", short_tidy_unique, domaindis_setup) #
+elut_viewer("TMED5_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TMX3_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("TWF2_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("VP13D_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("VWA9_HUMAN", short_tidy_unique, domaindis_setup) #
+elut_viewer("YBOX1_HUMAN", short_tidy_unique, domaindis_setup) #
+
+
+# More to do
+
+
+
+```
+
+

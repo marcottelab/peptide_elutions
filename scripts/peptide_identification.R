@@ -1,37 +1,23 @@
 library(tidyverse)
 library(argparse)
 
+Rscript scripts/peptide_identification.R --elut_wide example_file/example_experiment.pepcount --peps example_files/example_unique_peptides.csv
 
-parser <- ArgumentParser(description='Identify peptides in an experiment, after running peptide_preprocessing.R for a species')
+parser <- ArgumentParser(description='Identify peptide -> protein in an experiments')
 
 parser$add_argument('--elut_wide', dest='elut_wide', action='store', required=TRUE,
     help='Wide elution table')
 
 parser$add_argument('--peps', dest='peps', action='store', required=TRUE,
-    help='Output of peptide_preprocessing.R')
-
-parser$add_argument('--protein_lengths', dest='protein_lengths', action='store', required=TRUE,
-    help='How long each protein is, two column csv, header ProteinID,seqlen')
-parser$add_argument('--exp_meta', dest='exp_meta', action='store', required=TRUE,
-    help='csv containing ExperimentID, experiment_name')
+    help='Output of define_grouping.py')
 
 
 args = parser$parse_args()
 
 elut_wide_file <- args$elut_wide
 peps <- read_csv(args$peps)
-protein_lengths <- read_csv(args$protein_length)
-exp_meta <- args$exp_meta
 
-#elut_wide_file <-  "data/Anna_HEK293T_IEX_mixed_bed_RNASE_050117.pepcount"
-#peps <-  read_csv("data/human_annotated_peptides.csv")
-#exp_meta<- "annotation_files/experiment_meta.csv"
-#protein_lengths <- read_csv("data/human_protein_lengths.csv")
-
-exp_meta <- read_csv(exp_meta) %>%
-            rowid_to_column(var = "experiment_order")
-print("Read elution")
-
+# Load elution
 elut_wide <- read_delim(elut_wide_file,  delim = "\t") %>%
         #read_delim(elut_wide_file, col_names = FALSE, delim = "\t") %>%
         mutate(ExperimentID = str_replace({{ elut_wide_file }}, ".pepcount", "")) %>%
@@ -52,14 +38,10 @@ fraction_order <- elut_wide %>% head(0) %>%
 
 print("Identify peptides")
 elut_wide_identified <- elut_wide %>%
-  left_join(exp_meta, by = "ExperimentID") %>%
-  inner_join(peps, by = "Peptide") %>%
-  arrange(Start, End) %>%
-  left_join(protein_lengths, by = "ProteinID")
+  inner_join(peps, by = "Peptide")
 
 print("Identify proteins with no peptides")
 proteins_w_unique_peps <- elut_wide_identified %>%
-  filter(status == "protein_unique") %>%
   select(ProteinID, experiment_name) %>%
   unique
 
@@ -82,13 +64,6 @@ fraction_order %>% write_csv(paste0(elut_wide_file, "fraction_order.csv"))
 
 elut_long %>% write_csv(paste0(elut_wide_file, ".annot.long.tidy"))
 
-#total_fractions <- elut_long %>%
-#  select(experiment_name, FractionID) %>%
-#  unique %>%
-#  group_by(experiment_name) %>%
-#     summarize(totfracs = max(FractionID))
-
-#fraction_order %>% write_csv(paste0(elut_wide_file, "fraction_order.csv"))
 total_fractions <- nrow(fraction_order)
 
 
@@ -96,7 +71,6 @@ total_fractions <- nrow(fraction_order)
 elut_short <- elut_long %>% 
   filter(pepcount > 0) %>%
   mutate(totfracts = total_fractions)
-  #left_join(total_fractions, by = "experiment_name")
 
 elut_short %>% write_csv(paste0(elut_wide_file, ".annot.short.tidy"))
 
