@@ -41,8 +41,12 @@ for f in data_files/BCM]*elut_long.csv; do echo "Rscript scripts/fit_mixedmodels
  --elut_long $f --outfile ${f%.csv}_mixed_models.csv --numgauss 2" ; done > mixed_models_COMMANDS.sh
 
 
-## Peptide identification and formatting
+# Peptide identification and formatting
+## 1) Format result files from MSFragger using format_MSFragger_files.py
+	python3 /stor/home/mwsaelee/peptide_elutions-master/scripts/format_MSFragger_files.py --root_folder '/stor/work/Marcotte/MS/processed/Lumos_Marcotte/Momo/menstrual_blood_sup_SEC_1/fragger' --fractionation_name 'MB_sup_SEC1' --output_file '/stor/home/mwsaelee/peptide_elutions-master/scripts/outputfile.csv'
 
+
+## 2) Format result files from MSBlender by following the steps below
 ### These steps use scripts from two other github repositories
 
 - github.com/marcottelab/MS_grouped_lookup
