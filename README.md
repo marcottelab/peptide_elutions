@@ -4,7 +4,13 @@ Analysis accompanying "Alternative proteoforms and proteoform-dependent assembli
 
 Claire D. McWhite, Wisath Sae-Lee, Anna L. Mallam, Nicolas A. Gort Freitas, and Edward M. Marcotte
 
+***TO-DO***
+A short paragraph to explain the pipeline and how it works.
+
 ### Input data
+
+***TO-DO***
+Simplify input data format since peptide_identification.R will reformat input file to short_tidy form anyway.
 
 Four column csv, describing the which fraction each peptide is found in, and its amount. 
 
@@ -24,16 +30,27 @@ Peptide | Hemolysate_IEX_07 | Hemolysate_IEX_08 | Hemolysate_IEX_09_10032017
 
 
 ### Processing
+***TO-DO***
+modify peptide_identification.R to be able to take result file from both MSFragger and MSBlender
+write up and give example of how to run the script
 
-### Image creation
+Process peptide files for Gaussian fitting 
 
 ### Scoring
+***TO-DO***
+modify Line 742 - Line 783 to be able to take result file from both MSFragger and MSBlender
+write up and give example of how to run the script
+
+1. Gaussian fitting is used to identify potential proteoform and to find break points for proteoforms.
+2. Calculate terminal bias score in order to prioritize proteins to inspect manually.
+-make .R file for Line 1097 - Line 1149
 
 ### Visual caterogizing
+***TO-DO***
+-clean up elution_viewer.Rmd
 
-
-
-
+Visualize proteins with terminal bias score>2 through a Shiny app
+A section to explain how to look for proteoform visually.
 
 
 
