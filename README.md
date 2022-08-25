@@ -40,7 +40,7 @@ Process peptide files for Gaussian fitting
 1. Idenitfy peaks from peptide elution profile of each protein in a fractionation experiment using Gaussian Mixture Model. Multiple peaks suggest the existence of proteoforms or intact proteins eluting with different binding partners. 
 Script: Gaussian_fitting.R
 Input file:
-[image](https://user-images.githubusercontent.com/32718019/186776934-acc71510-69cb-474d-91ae-63d62fa8c032.png)
+![alt text](https://user-images.githubusercontent.com/32718019/186776934-acc71510-69cb-474d-91ae-63d62fa8c032.png)
 
 Example:
 
