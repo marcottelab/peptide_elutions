@@ -37,14 +37,15 @@ write up and give example of how to run the script
 Process peptide files for Gaussian fitting 
 
 ### Scoring
-1. Idenitfy peaks from peptide elution profile of each protein in a fractionation experiment using Gaussian Mixture Model. Multiple peaks suggest the existence of proteoforms or intact proteins eluting with different binding partners. 
-Script: Gaussian_fitting.R
-Input file:
-![alt text](https://user-images.githubusercontent.com/32718019/186778488-8172fdfc-f8d8-400b-89ac-76dec4752308.png)
+1. Idenitfy peaks from peptide elution profile of each protein in a fractionation experiment using Gaussian Mixture Model. Multiple peaks suggest the existence of proteoforms or intact proteins eluting with different binding partners. <Enter> 
+Script: Gaussian_fitting.R <Enter> 
+Input file: <Enter> 
+![alt text](https://user-images.githubusercontent.com/32718019/186778488-8172fdfc-f8d8-400b-89ac-76dec4752308.png) <Enter> 
 
-Example code: Rscript-4.0.3 /scripts/Gaussian_fitting.R --input_file example/short_tidy_unique_anna_hekSEC2.csv --simple_AdapGauss /scripts/simple_AdaptGauss.R --output_file example/short_tidy_unique_anna_hekSEC2_peaks.csv
+Example code: Rscript-4.0.3 /scripts/Gaussian_fitting.R --input_file example/short_tidy_unique_anna_hekSEC2.csv --simple_AdapGauss /scripts/simple_AdaptGauss.R --output_file example/short_tidy_unique_anna_hekSEC2_peaks.csv <Enter> 
 
-Expected result:
+Expected result:<Enter> 
+	
 ![alt text](https://user-images.githubusercontent.com/32718019/186778945-6d2824fb-8350-4787-825d-6908834f9f9a.png)
 
 2. Calculate terminal bias score in order to prioritize proteins to inspect manually.
