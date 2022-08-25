@@ -37,11 +37,33 @@ write up and give example of how to run the script
 Process peptide files for Gaussian fitting 
 
 ### Scoring
-***TO-DO***
-modify Line 742 - Line 783 to be able to take result file from both MSFragger and MSBlender
-write up and give example of how to run the script
+1. Idenitfy peaks from peptide elution profile of each protein in a fractionation experiment using Gaussian Mixture Model. Multiple peaks suggest the existence of proteoforms or intact proteins eluting with different binding partners. 
+Script: Gaussian_fitting.R
+Input file:
 
-1. Gaussian fitting is used to identify potential proteoform and to find break points for proteoforms.
+| Tables        | Are           | Cool  | Peptide        | ExperimentID           | Cool  |
+| ------------- |:-------------:| -----:|
+| col 3 is      | right-aligned | $1600 |
+| col 2 is      | centered      |   $12 |
+| zebra stripes | are neat      |    $1 |
+
+Peptide  | ExperimentID                 | Peptide                           | PeptideCount
+---------| -------------------------- | --------------------------------- | ------------
+MKJEEVK  | Hemolysate_IEX_06_10032017 | ACANPAAGSVILLENLR                 | 3.0
+MAFANFRR | Hemolysate_IEX_06_10032017 | ADGLAVIGVLMK                      | 33.0
+
+Peptide	ExperimentID	experiment_order	experiment_name	spec	ProteinID	Start	End	ID	seqlen	FractionID	pepcount	FractionOrder	totfracs
+MKJEEVK	Anna_Control_HEK_SEC_020118_run2	8	HEK_SEC2	human	sp|Q9Y265|RUVB1_HUMAN	1	7	KOG1942	456	Control_HEK_SEC_020118_30b	1	21	61
+MKJEEVK	Anna_Control_HEK_SEC_020118_run2	8	HEK_SEC2	human	sp|Q9Y265|RUVB1_HUMAN	1	7	KOG1942	456	Control_HEK_SEC_020118_31b	1	22	61
+MKJEEVK	Anna_Control_HEK_SEC_020118_run2	8	HEK_SEC2	human	sp|Q9Y265|RUVB1_HUMAN	1	7	KOG1942	456	Control_HEK_SEC_020118_32b	1	23	61
+MKJEEVK	Anna_Control_HEK_SEC_020118_run2	8	HEK_SEC2	human	sp|Q9Y265|RUVB1_HUMAN	1	7	KOG1942	456	Control_HEK_SEC_020118_33b	1	24	61
+MKJEEVK	Anna_Control_HEK_SEC_020118_run2	8	HEK_SEC2	human	sp|Q9Y265|RUVB1_HUMAN	1	7	KOG1942	456	Control_HEK_SEC_020118_34b	1	25	61![image](https://user-images.githubusercontent.com/32718019/186776934-acc71510-69cb-474d-91ae-63d62fa8c032.png)
+
+Example:
+
+Expected result:
+
+
 2. Calculate terminal bias score in order to prioritize proteins to inspect manually.
 -make .R file for Line 1097 - Line 1149
 
