@@ -40,12 +40,12 @@ Process peptide files for Gaussian fitting
 1. Idenitfy peaks from peptide elution profile of each protein in a fractionation experiment using Gaussian Mixture Model. Multiple peaks suggest the existence of proteoforms or intact proteins eluting with different binding partners. 
 Script: Gaussian_fitting.R
 Input file:
-![alt text](https://user-images.githubusercontent.com/32718019/186776934-acc71510-69cb-474d-91ae-63d62fa8c032.png)
+![alt text](https://user-images.githubusercontent.com/32718019/186778488-8172fdfc-f8d8-400b-89ac-76dec4752308.png)
 
-Example:
+Example code: Rscript-4.0.3 /scripts/Gaussian_fitting.R --input_file example/short_tidy_unique_anna_hekSEC2.csv --simple_AdapGauss /scripts/simple_AdaptGauss.R --output_file example/short_tidy_unique_anna_hekSEC2_peaks.csv
 
 Expected result:
-
+![alt text](https://user-images.githubusercontent.com/32718019/186778945-6d2824fb-8350-4787-825d-6908834f9f9a.png)
 
 2. Calculate terminal bias score in order to prioritize proteins to inspect manually.
 -make .R file for Line 1097 - Line 1149
