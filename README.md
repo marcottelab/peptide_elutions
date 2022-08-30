@@ -36,7 +36,7 @@ Script: peptide_identification_single_frac.R <Enter>
 Input file: <Enter> 
 ![alt text](https://user-images.githubusercontent.com/32718019/187560693-c5e8851d-a7cc-4705-bf01-0b6e575f1673.png)
 
-
+Example code: Rscript-4.0.3 /scripts/peptide_identification_single_frac.R --elut_wide_file /data/pivot_test.csv --fraction_order /data/fraction_order_test.csv --peps /data/uniprot_human_digested.csv --seqlen /data/seq_length_homo_sapiens.tsv --spec human --output_file /data/short_tidy_unique_MB_sup_SEC.csv  
 
 
 ### Scoring
