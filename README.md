@@ -38,6 +38,9 @@ Input file: <Enter>
 
 Example code: Rscript-4.0.3 /scripts/peptide_identification_single_frac.R --elut_wide_file /data/pivot_test.csv --fraction_order /data/fraction_order_test.csv --peps /data/uniprot_human_digested.csv --seqlen /data/seq_length_homo_sapiens.tsv --spec human --output_file /data/short_tidy_unique_MB_sup_SEC.csv  
 
+Expected result:<Enter> 
+![alt text](https://user-images.githubusercontent.com/32718019/187561244-b0e6ed26-6e5c-4f65-ab26-d1386462185d.png)
+
 
 ### Scoring
 1. Idenitfy peaks from peptide elution profile of each protein in a fractionation experiment using Gaussian Mixture Model. Multiple peaks suggest the existence of proteoforms or intact proteins eluting with different binding partners. <Enter> 
