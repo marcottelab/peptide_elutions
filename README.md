@@ -30,11 +30,14 @@ Peptide | Hemolysate_IEX_07 | Hemolysate_IEX_08 | Hemolysate_IEX_09_10032017
 
 
 ### Processing
-***TO-DO***
-modify peptide_identification.R to be able to take result file from both MSFragger and MSBlender
-write up and give example of how to run the script
-
 Process peptide files for Gaussian fitting 
+Script: peptide_identification_single_frac.R <Enter> 
+
+Input file: <Enter> 
+![alt text](https://user-images.githubusercontent.com/32718019/187560693-c5e8851d-a7cc-4705-bf01-0b6e575f1673.png)
+
+
+
 
 ### Scoring
 1. Idenitfy peaks from peptide elution profile of each protein in a fractionation experiment using Gaussian Mixture Model. Multiple peaks suggest the existence of proteoforms or intact proteins eluting with different binding partners. <Enter> 
