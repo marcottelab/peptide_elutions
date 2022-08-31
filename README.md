@@ -4,8 +4,7 @@ Analysis accompanying "Alternative proteoforms and proteoform-dependent assembli
 
 Claire D. McWhite, Wisath Sae-Lee, Anna L. Mallam, Nicolas A. Gort Freitas, and Edward M. Marcotte
 
-***TO-DO***
-A short paragraph to explain the pipeline and how it works.
+This README demonstrates hhow to analyze your fractionation experiment for the existence of proteoforms. 
 
 ### Input data
 If the fractionation experiment was analyzed with MSFragger, run the following script to combine data from each fraction into one single file.<Enter> 
