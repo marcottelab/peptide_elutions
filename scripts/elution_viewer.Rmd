@@ -6,6 +6,7 @@ output: html_document
 
 ### Elution viewer
 ```{r}
+library(shiny)
 
 elut_viewer <- function(protid, short_tidy_both , domaindis_setup){
   tester <-short_tidy_both %>%

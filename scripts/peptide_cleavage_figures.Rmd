@@ -4,146 +4,12 @@ output: html_document
 ---
 
 
-This is analysis and data to support XXXX
+This is analysis and data to support 
+"Alternative proteoforms and proteoform-dependent assemblies in humans and plants"
 
 
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE) 
-```
-
-```{r todo}
-# Get all figure protein panels made via this script
-# Last time did each one individually for different proteins, that that was a lot
-# Make figures for all human proteins
-# check through again for new
-# Don't do Ankyrin
-# Rewrite cov_columns
-# pasdfa to combine to figure outline, then illustrator in remaining bits
-# Make a file of main functions that can be used with the "scripting" high throughput loop and
-# the artisal paper figures
-# Add read_fasta to biobroom?
-
-
-# really need to get peporder/pepstart worked out. 
-
-# Get pepstart, then get peporder
-
-### PLAN for RNA comparison
-
-# Get RNA isoform sequences.
-# Get overlap with canonical sequences
-
-# Map start and end positions of overlap with canonical sequence
-# Find fragments that start and end within fragments. Get shortest isoform containing fragment?
-
-# If shortest containing isoform is the full length, then it's likely not a transcript derived isoform
-
-
-
-```
-		
-
-
-####
-
-First classify by eye
-Then classify by fit
-Then classify fit peaks manually
-
-#### Individual protein notes
-GTF2I  = binds PCNA and REV7 via 1 -667, not chopped off two CTDs. 
-https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1004419
-
-
-Villin4 is a good highlight. Check other arabidopsis Villins. # https://www.researchgate.net/publication/12174290_A_soluble_auxin-binding_protein_ABP57_Purification_with_anti-bovine_serum_albumin_antibody_and_characterization_of_its_mechanistic_role_in_the_auxin_effect_on_plant_plasma_membrane_H-ATPase/figures?lo=1
-
-
-# Short enough linker 359 VAALLQRQGVN VRGLMKAAPP KEEPQVFIDC TGN
-# That could look for each peptide. 
-Grouping is between two sets of 3 Gelsolin domains. 
-Human has caspase 3 sensitive linker between two sets. 
-No caspase3 in arabidopsis
-Doesn't match isoform
-Unknown protease, analogous regulation of actin polymerization
-
-# truncation mutants of core +/- tail, and tail alone show different effects on actin.  http://www.plantphysiol.org/content/181/1/161
-
-ARATH_IEX1 shows n terminal and c terminal fragments. ARATH_SEC1 shows whole protein, but missing C terminus fragment. 
-Isolated n-terminus in human has capping activity https://www.researchgate.net/publication/5657207_Gelsolin_and_Diseases/figures?lo=1
-
-
-C-terminal tail latch domain (in gelsolin) Must be opened for protein to function. Proteolysis can open.  https://onlinelibrary.wiley.com/doi/full/10.1002/cm.21117
-
-Also look at Vili2
-See where actin eluts. 
-The little c terminal is captured in ARATH_IEX4 and maybe ARATH_IEX3 (not in training set)
-
-
-Survey and comparison
-
-New discoveries
-
-Convervation
-
-Extra nice. 
-
-A) Different protein interactions - Check
-
-B)
-If can get region of interest....
-Add peptides of 
-last observed -> X
-Either find PTM in fragment... Or cleaved peptide. 
-
-COFRADIC for N terminal truncations
-https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4770386/
-
-
-Look at MTV1 arabidopsis with AP-4 https://www.arabidopsis.org/servlets/TairObject?name=AT3G16270&type=locus
-
-- Example of protein where there is another version without correspondence to fragment.
-Y4554_ARATH = basically uncahracterize
-Lookis like a strucutreal linker 
-http://www.plantphysiol.org/content/180/1/212
-C-terminal domain with homology to harmonin is solo
-ENOG410IGB4
-
-
-HNRNPU https://www.pnas.org/content/112/23/E3020
-truncation mutant at same point with phenotype
-https://www.sciencedirect.com/science/article/pii/S1534580710003813
-Another linker
-
-LOOK into this one A0A2K3CZA0, Coatamer subunit!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Corresponds to transcripts
-
-
-STAU1 looks like a connector/linker (links RNA and cytoskeleton, look into this)
-
-Loks at EXOSX
-
-Component of the PRP19-CDC5L splicing complex composed of a core complex comprising a homotetramer of PRPF19, CDC5L, PLRG1 and BCAS2 (SPF27_HUMAN)
-PLRG1_HUMAN
-
-CDC5L in chlamydomonas is A0A2K3DYR4
-PREDICT that N-terminus of PLRG1 interacts with c? terminal of CDC5L
-             C-terminus of PLRG1 interacts with most PLRG1 (c terminal, minus a little n terminal bit)
-
-PLRG1_HUMAN ortholog in chlamydomonas shows pattern
-  weaker evidence in humans, but stil there
-  A0A2K3DAW8 = PLRG1_HUMAN = PRL1_ARATH (shows frags)
-  A0A2K3DYR4 = CDC5L_HUMAN = CDC5L_ARATH # Goes with PLRG1 N-Term in CHLRE_IEX1
-  A8I9S6 = PRP19_HUMAN =PR19B_ARATH # Goes with PLRG1 C-term CHLRE_IEX1
-  A0A2K3CNP4 = SPF27_HUMAN  = SPF27_ARATH ONE peptide with PLR1 n terminus
-
-PEPC
-CAPP1, CAPP2
-Enzyme that is sensitive to losing the first 120 aa. W
-https://academic.oup.com/pcp/article/46/11/1855/1894683?login=true
-
-Check fig_gen PANK1_human. too long? Why doesn't match uniprot entry?
-		
-
+# Load libraries and functions and set style
 ```{r libraries}
 library(tidyverse)
 library(cowplot)
@@ -151,7 +17,10 @@ library(broom)
 library(patchwork)
 library(ggridges)
 library(seqinr)
-#library(plotly)
+library(future)
+library(furrr)
+library(plotly)
+library(shiny)
 
 source("scripts/fasta_utils.R")
 source("scripts/theme_utils.R")
@@ -162,20 +31,74 @@ palette <- rep(c("#0072B2","#E69F00","#009E24","#FF0000", "#979797","#5530AA"), 
 ```
 
 
-### Orthologies
+
+# Load and format proteomics data
+
+### Load peptide elution data
 ```{r}
-human_orthology <- read_tsv("protein_identification/eggnog_mapping/human_hmmer_euNOG.mapping")
-arath_orthology <- read_tsv("protein_identification/eggnog_mapping/arath_hmmer_euNOG.mapping")
-chlre_orthology <- read_tsv("protein_identification/eggnog_mapping/chlre_hmmer_euNOG.mapping")
+
+# Get those arabidopsis IEX's
+data_path <- "data"
+short_tidy_filenames <- dir(data_path, pattern = ".*.pepcount.annot.short.tidy$") # Get filenames of data
 
 
-orthologies <-
-  bind_rows(human_orthology,
-            arath_orthology,
-            chlre_orthology)
+# Data format description
+
+#Peptide,ExperimentID,experiment_order,experiment_name,spec,ProteinID,Start,End,status,ID,seqlen,FractionID,pepcount,FractionOrder,totfracts
+#MDMEMK,soybn_Soy_SECwithStandards,20,SOYBN_SEC2,soybn,tr|I1JP35|I1JP35_SOYBN,1,6,protein_unique,KOG4249,419,SoySEC_standards_03a_03142018,2,2,70
+
+# Minimum necessary columns are Peptide, ExperimentID, ProteinID, Start, End, FractionOrder, pepcount
+# Start,End give location of peptide, indexed from 1
+# FractionOrder (numeric) is which fraction where the peptide was seen
+
+short_tidy_filenames
+
+
+short_tidy <- tibble(filename = short_tidy_filenames) %>%
+               mutate(file_contents = map(filename, ~ read_csv(file.path(data_path, .)))) %>%
+               unnest(cols = c(file_contents)) %>%
+  as_tibble() %>%
+  rename(totfracs = totfracts)
+
+# Only take proteins with at least 10 unique peptides observed across experiments
+numpeps_filter <- short_tidy %>%
+  select(ProteinID, Peptide) %>%
+  unique() %>%
+  dplyr::count(ProteinID) %>% #seqinr can overwrite count
+  filter(n >= 10) %>%
+  select(ProteinID)
+
+short_tidy %>% write_csv("data/short_tidy.csv")
+short_tidy <- read_csv("data/short_tidy.csv")
+
+numpeps_filter %>% write_csv("data/numpeps_filter_10.csv")
+numpeps_filter <- read_csv("data/numpeps_filter_10.csv")
+
+
+short_tidy_filt <- short_tidy %>%
+   filter(ProteinID %in% numpeps_filter$ProteinID)
+
 ```
 
-### Proteome annotations
+
+### Get only protein unique peptides
+```{r}
+
+short_tidy_unique <- short_tidy_filt %>%
+  filter(status == "protein_unique") %>% select(-filename, -status)
+short_tidy_unique %>% write_csv("data_files/short_tidy_unique.csv")
+
+```
+
+
+
+
+
+
+# Load accessory files
+
+
+### Load proteome sequences and annotations
 ```{r}
 
 
@@ -219,7 +142,7 @@ meta <- bind_rows(
 ```
 
 
-### Domain annotations
+### Domain coordinate annotations
 
 ```{r}
 
@@ -241,7 +164,22 @@ domains_pfam <- bind_rows(
 
 ```
 
-Comppare fragments to known isoforms
+
+### Orthologies for consolidation related proteins across species
+```{r}
+human_orthology <- read_tsv("protein_identification/eggnog_mapping/human_hmmer_euNOG.mapping")
+arath_orthology <- read_tsv("protein_identification/eggnog_mapping/arath_hmmer_euNOG.mapping")
+chlre_orthology <- read_tsv("protein_identification/eggnog_mapping/chlre_hmmer_euNOG.mapping")
+
+
+orthologies <-
+  bind_rows(human_orthology,
+            arath_orthology,
+            chlre_orthology)
+```
+
+
+### For comparing fragments to known isoforms
 ```{r}
 human_w_isoform <- read_fasta("annotation_files/uniprot_human_reviewed_isoforms.fasta")
 
@@ -260,72 +198,126 @@ human_w_isoform %>%
 #10535/(9817 + 10535)
 ```
 
-### Load peptide elution data
+# Load domain/disorder coordinate annotations
+### Downloaded from https://mobidb.org/ browse
 ```{r}
 
-# Get those arabidopsis IEX's
-data_path <- "data"
-#short_tidy_filenames <- dir(data_path, pattern = ".*H[Ee][Km].*.pepcount.short.tidy$") # Get filenames
-short_tidy_filenames <- dir(data_path, pattern = ".*.pepcount.annot.short.tidy$") # Get filenames
-short_tidy_filenames <-short_tidy_filenames[!grepl("urea", short_tidy_filenames)]
-short_tidy_filenames <-short_tidy_filenames[!grepl("IEX_RNaseA", short_tidy_filenames)]
-short_tidy_filenames <-short_tidy_filenames[!grepl("IEX_mixed_bed_RNASE", short_tidy_filenames)]
+mobidb_human <- read_delim("/project/cmcwhite/data/exons/data/mobidb_human.txt", delim ="\t") 
+mobidb_arath <- read_delim("/project/cmcwhite/data/exons/data/mobidb_arath.txt", delim ="\t") 
+mobidb_chlre <- read_delim("/project/cmcwhite/data/exons/data/mobidb_chlre.txt", delim ="\t") 
 
+domains_dis <- bind_rows(
+  mobidb_chlre,
+  mobidb_human,
+  mobidb_arath
+) %>%
+  filter(feature %in%  c("prediction-disorder-mobidb_lite", "prediction-transmembrane-uniprot")) %>%
+  separate_rows(`start..end`, sep = ",") %>%
+  separate(`start..end`, into = c("ProtBegin", "ProtEnd"), sep = "[.][.]") %>%
+  mutate(ProtBegin = as.integer(ProtBegin)) %>%
+  mutate(ProtEnd = as.integer(ProtEnd)) %>%
+  rename(Entry = acc) %>%
+  select(Entry, ProtBegin, ProtEnd, feature) %>% 
+  mutate(set = case_when(feature == "prediction-disorder-mobidb_lite"~ "Disordered",
+                              feature == "prediction-transmembrane-uniprot" ~ "Transmembrane")) %>%
+  select(-feature)
+```
 
-short_tidy_filenames
+Make annotation plots
+```{r}
+domains_dis
 
+domains_dis_formatted <- domains_dis%>%
+  select(Entry, ProtBegin,ProtEnd, set) %>%
+  mutate(Annotation ="Disordered") %>%
+  
+  mutate(ymin = case_when(set == "Disordered" ~ 0.8,
+                          set == "Transmembrane" ~ 1)) %>%
+   mutate(ymax = case_when(set == "Disordered" ~ 1,
+                          set == "Transmembrane" ~ 1.4))
 
-short_tidy <- tibble(filename = short_tidy_filenames) %>%
-               mutate(file_contents = map(filename, ~ read_csv(file.path(data_path, .)))) %>%
-               unnest(cols = c(file_contents)) %>%
-  as_tibble() %>%
-  rename(totfracs = totfracts)
+domains_pfam_formatted <- domains_pfam %>%
+  select(Entry, ProtBegin,ProtEnd, Annotation) %>%
+  mutate(ymin = 0.1, ymax = 0.8) %>%
+  mutate(set = 'Domains')
 
-# May be able to do this by species with more grouping
-numpeps_filter <- short_tidy %>%
-  select(ProteinID, Peptide) %>%
-  unique() %>%
-  dplyr::count(ProteinID) %>% #seqinr overwrite count
-  filter(n >= 10) %>%
-  select(ProteinID)
+domaindis_setup <- 
+  bind_rows(
+    domains_pfam_formatted,
+    domains_dis_formatted
+    
+  ) %>%
+  full_join(meta) %>%
+  mutate(set = fct_relevel(set, c("Domains", "Disordered", "Transmembrane"))) %>%
+  filter(!is.na(Entry_name)) # There are some other proteins brought in with pfam
 
-short_tidy %>% write_csv("data/short_tidy.csv")
-short_tidy <- read_csv("data/short_tidy.csv")
+domaindis_setup %>%
+  write_tsv("data_files/domaindis_setup.txt")
 
-numpeps_filter %>% write_csv("data/numpeps_filter_10.csv")
-numpeps_filter <- read_csv("data/numpeps_filter_10.csv")
-
-
-short_tidy_filt <- short_tidy %>%
-   filter(ProteinID %in% numpeps_filter$ProteinID)
+domaindis_setup
+domaindis_setup %>%
+ # filter(Entry_name == "RK2_CHLRE") %>%
+ filter(Entry_name == "MER34_HUMAN") %>%
+  ggplot() +
+  geom_rect(fill = "grey90", aes(xmin = 0, xmax = seqlen, ymin = 0.1, ymax = 0.8)) +
+  geom_rect(aes(xmin = ProtBegin, xmax = ProtEnd, ymin = ymin, ymax = ymax, fill = set)) +
+  theme(axis.line.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x= element_blank(),
+        axis.line.y = element_blank(),
+        axis.title.y = element_blank()) +
+  coord_flip() +
+  scale_fill_manual(values = c("orange", "cadetblue4", "purple")) +
+  scale_y_continuous(limits = c(0,15), expand = c(0,0)) +
+  scale_x_reverse(expand = c(0,0)) +
+  #scale_y_continuous()
+  geom_text_repel(y = 1, ylim = c(1,15), aes(x = ProtBegin, label = Annotation)) +
+  theme(legend.position = "none") 
+  
+  
 
 ```
 
 
-### Get only protein unique peptides
+
 ```{r}
 
-short_tidy_unique <- short_tidy_filt %>%
-  filter(status == "protein_unique") %>% select(-filename, -status)
-short_tidy_unique %>% write_csv("data_files/short_tidy_unique.csv")
+domaindis_setup <- read_tsv("data_files/domaindis_setup.txt")
+  domain_dis_plot <- domaindis_setup %>%
+  filter(Entry_name == "WDR44_HUMAN") %>%
+    mutate(label = str_replace(Entry_name, "_", "\n")) %>%
+    mutate(label = str_replace(label, "A0A2K3", "c")) %>%
+  
+  ggplot() +
+  geom_rect(fill = "grey90", aes(xmin = 0, xmax = seqlen, ymin = 0.1, ymax = 0.8)) +
+  geom_rect(aes(xmin = ProtBegin, xmax = ProtEnd, ymin = ymin, ymax = ymax, fill = set)) +
+  theme(axis.line.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y= element_blank(),
+        axis.line.x = element_blank(),
+        axis.title.x = element_blank()) +
+  scale_fill_manual(values = c("orange", "cadetblue4")) +
+  scale_y_continuous(limits = c(0,2), expand = c(0,0)) +
+  #scale_x_reverse(expand = c(0,0)) +
+  geom_text_repel(alpha = 0.7, y = 1, ylim = c(1,2), size = 2.5, aes(x = ProtBegin, label = Annotation)) +
+  theme(legend.position = "none") +
+    facet_wrap(~label, ncol = 1, strip.position = "left")
+
+domain_dis_plot
+
+
 
 ```
 
 
-### Get smaller dataset of just labeled proteins
-```{r}
-
-short_tidy_unique_labeled <- short_tidy_unique %>% 
-        filter(ProteinID %in% labels$ProteinID) 
-
-```
 
 
+# Descriptive files
 ### Make descriptive files
 ```{r}
 total_exps <-  short_tidy_filt %>%
   select(experiment_name ) %>%
-  unique %>%
+  unique 
 
 fraction_names  <- short_tidy_filt %>%
   select(experiment_name, FractionID, FractionOrder) %>%
@@ -358,9 +350,7 @@ short_tidy_filt %>%
 #### Make small postage stamp plots for visual screening
 Step one for picking out positives
 ```{r}
-library(future)
-library(furrr)
-library(patchwork)
+
 plan(multiprocess)
 
 
@@ -390,227 +380,20 @@ safe_plotter <- possibly(plotter_wrapper, otherwise = data.frame(status = "FAILE
 short_tidy_unique %>% 
   arrange(Start, End) %>%
     filter(ProteinID == "sp|A6NCN2|KR87P_HUMAN") %>%
-    #filter(experiment_name == "HEMO_IEX1") %>%
-    View()
-    #pep_heatmap_fxn()
   split(.$ProteinID) %>%
   future_map_dfr(~plotter_wrapper(.x, "png"), .id = "ProteinID.exp", .progress = TRUE) %>%
   #future_map_dfr(~safe_plotter(.x, "png"), .id = "ProteinID.exp", .progress = TRUE) %>%
   data.frame() -> command_out
 ```
 
-For one protein at a time
-Make panels for figures
-```{r}
-b_w_plot <- function(short_tidy_unique_sel, pubtheme = TRUE){
-  
-  numprots <-  short_tidy_unique_sel %>% pull(ProteinID) %>% unique %>% length()
-  print(numprots)
-  plt <- short_tidy_unique_sel %>%
-    group_by(Peptide, experiment_name) %>%
-       mutate(pepcount = pepcount/ max(pepcount)) %>%
-    ungroup %>%
-    ggplot(aes( x = FractionOrder , y = fct_rev(fct_reorder(Peptide, Start)), fill = pepcount)) +
-  
-    geom_tile() +
-    geom_blank(aes(x = totfracs)) +  
-    #facet_grid(ProteinID ~experiment_order + experiment_name) + #, nrow = {{numprots}}, scales = "free_x") +
-   # facet_wrap(ProteinID  ~experiment_order + experiment_name, nrow = {{numprots}}, scales = "free_x") +
-    #facet_wrap(ProteinID  ~experiment_order + experiment_name, nrow = {{numprots}}, scales = "free_y") +
-    facet_grid(ProteinID  ~ experiment_name , scales = "free_y", drop = FALSE) +
-  
-  
-    #scale_fill_gradient(low = "black", high = "white", na.value= "black") +
-    scale_fill_gradient(low = "#FFFFC6", high = "#3F1CC6", na.value = '#FFFFC6' ) +
-    #scale_fill_gradient(low = "yellow", high = "", na.value = "yellow")
-    scale_x_continuous(limits = c(0, NA),breaks = seq(0, 1000, 30) ) +
-    scale_y_discrete(expand = c(0,0)) + #This gets rid of the bottom grey space to help with alignment
-  
-    theme(panel.background = element_rect(fill = "#FFFFC6"),
-          panel.spacing = unit(0.2, "lines"), 
-          axis.line.x = element_line(color = "black"),
-          axis.text.y = element_blank(),
-          axis.title.x = element_blank(),
-          axis.ticks.y = element_blank(),
-          axis.title.y = element_blank(),  
-          axis.text.x = element_text(color = "black", angle = 45,vjust =1 , hjust = 1 ),
-          legend.position = "none",
-          strip.background = element_rect(fill = "white"))
-
-  if(pubtheme == TRUE){
-   plt <- plt +
-         theme_nothing() + 
-         theme( panel.background = element_rect(fill = "#FFFFC6"),
-            panel.spacing = unit(0.25, "lines"),
-            strip.text = element_text(), 
-            plot.margin = unit(margin(0.5,0.5,0.5,0.5), "lines"))
- 
-  }
-  
-  return(plt)
-  
-}
-
-# HEMO_IEX1, 2, SEC1, 2
-usp15 <- short_tidy_unique %>% 
-  filter(grepl("UBP15", ProteinID)) %>% 
-  filter(grepl("HEMO", experiment_name)) %>%
-  b_w_plot()
-
-# HEK_IEX1, 2, SEC1, 2
-usp15_hek <- short_tidy_unique %>% 
-  filter(grepl("UBP15", ProteinID)) %>% 
-  filter(grepl("HEK_", experiment_name))  %>%
-  b_w_plot() 
-
-nqo2 <- short_tidy_unique %>% 
-  filter(grepl("NQO2", ProteinID)) %>% 
-  filter(grepl("HEMO", experiment_name)) %>%
-  b_w_plot() 
-
-nqo2_hek <- short_tidy_unique %>% 
-  filter(grepl("NQO2", ProteinID)) %>% 
-  filter(grepl("HEK_", experiment_name)) %>%
-  b_w_plot() 
-
-# Only in hemolysate
-tng2 <- short_tidy_unique %>% 
-  #filter(ProteinID == "sp|Q9NZD4|AHSP_HUMAN") %>% # Pretty good, not in hek though
- # sp|O14618|CCS_HUMAN
-  #filter(ProteinID == "sp|Q9BS40|LXN_HUMAN") %>% # bad match
-   filter(ProteinID == "sp|Q6ICL3|TNG2_HUMAN") %>% 
-  #filter(ProteinID == "sp|P69905|HBA_HUMAN") # Doesn't align with alpha hemoglobin
-   # filter(ProteinID == "sp|Q8N0W3|FUK_HUMAN") %>%  
-  filter(grepl("HEMO", experiment_name)) %>%
-  b_w_plot(pubtheme = TRUE) 
-
-
-tng2_hek <- short_tidy_unique %>% 
-   filter(ProteinID == "sp|Q6ICL3|TNG2_HUMAN") %>% 
-  filter(grepl("HEK_", experiment_name)) %>%
-  b_w_plot(pubtheme = TRUE) 
-
-
-ahsp <- short_tidy_unique %>% 
-  filter(ProteinID == "sp|Q9NZD4|AHSP_HUMAN") %>% # Pretty good, not in hek though
- 
-  filter(grepl("HEMO", experiment_name)) %>%
-  b_w_plot(pubtheme = TRUE) 
-
-
-ahsp_hek <- short_tidy_unique %>% 
-  filter(ProteinID == "sp|Q9NZD4|AHSP_HUMAN") %>% # Pretty good, not in hek though
- 
-  filter(grepl("HEK_", experiment_name)) %>%
-  b_w_plot(pubtheme = TRUE) 
-
-
-hemoglobin <- short_tidy_unique %>%
-  filter(ProteinID == "sp|P69905|HBA_HUMAN") %>%
-    filter(grepl("HEMO", experiment_name)) %>%
-  b_w_plot(pubtheme = TRUE) 
-
-plot_grid( hemoglobin, usp15,ncol = 1, rel_heights = c(0.5, 1))
-
-
-rfc4 <- short_tidy_unique %>% 
-  filter(ProteinID == "sp|P35249|RFC4_HUMAN") %>% 
- 
-#  filter(grepl("HEMO", experiment_name)) %>%
-  b_w_plot(pubtheme = FALSE) 
-
-calp <-    short_tidy_unique %>%  filter(ProteinID == "sp|P20810|ICAL_HUMAN") %>% #
-  #filter(grepl("HEMO", experiment_name)) %>%
-  b_w_plot(pubtheme = TRUE)
-
-calp <-    short_tidy_unique %>%  filter(ProteinID == "sp|P20810|ICAL_HUMAN") %>% #
-  #filter(grepl("HEMO", experiment_name)) %>%
-  b_w_plot(pubtheme = TRUE)
-
-
-
-
-combo <- plot_grid(nqo2, tng2, ahsp, usp15, ncol = 1, rel_heights = c(0.6, 1, 0.5, 3))
-combo
-combo %>%
-  ggsave("figures/usp_tng2_ahsp_nqo2.png", .)
-combo %>%
-  ggsave("figures/usp_tng2_ahsp_nqo2.pdf", .)
-
-
-
-
-combo_hek <- plot_grid(nqo2_hek, usp15_hek, ncol = 1, rel_heights = c(1, 1))
-combo_hek %>%
-  ggsave("figures/usp_nqo2_hek.png", .)
-combo_hek %>%
-  ggsave("figures/usp_nqo2_hek.pdf", .)
-
-
-```
-
-
+# Make positive/negative sets
 
 
 
 ```{r}
 
-# plots as IEX then SEC
-calp_hemo <-    short_tidy_unique %>%  filter(ProteinID == "sp|P20810|ICAL_HUMAN") %>% #
- 
-  filter(grepl("HEMO", experiment_name)) %>%
-  filter(experiment_name %in% c("HEMO_SEC2", "HEMO_IEX1")) %>%
-  mutate(experiment_name = fct_relevel(experiment_name,c("HEMO_SEC2", "HEMO_IEX1") ))%>%
-  b_w_plot(pubtheme = FALSE)
-
-calp_hek <-short_tidy_unique %>%  filter(ProteinID == "sp|P20810|ICAL_HUMAN") %>% #
- 
-  filter(grepl("HEK", experiment_name)) %>%
-  filter(experiment_name %in% c("HEK_IEX1", "HEK_SEC1")) %>%
-    mutate(experiment_name = fct_relevel(experiment_name,c("HEK_SEC1", "HEK_IEX1") )) %>%
-  b_w_plot(pubtheme = FALSE)
-
-calp_hemo
-calp_hek
-
-
-Figure_calp <- plot_grid(calp_hek, calp_hemo)
-
-Figure_calp  %>% ggsave("figures/Figure_calp.png", ., width = 3, height = 1.5)
-Figure_calp  %>%  ggsave("figures/Figure_calp.pdf", ., width = 3, height = 1.5)
-
-
-
-
-```
-
-Internal control CAPP2, easily breakable protein, not broken. 
-Area of poor observation though. 
-```{r}
-short_tidy_unique %>% # filter(ProteinID == "sp|Q9MAH0|CAPP1_ARATH") %>% #
-  
-  filter(ProteinID == "sp|Q5GM68|CAPP2_ARATH") %>%
- 
- # filter(grepl("HEK", experiment_name)) %>%
-  #filter(experiment_name %in% c("HEK_IEX1", "HEK_SEC1")) %>%
-   # mutate(experiment_name = fct_relevel(experiment_name,c("HEK_SEC1", "HEK_IEX1") )) %>%
-  b_w_plot(pubtheme = FALSE)
-
-```
-
-
-### Start detection process
-
-Modified AdaptGauss to fit up to 5 peaks, and run for more iterations (finds better fit)
-
-Returns lowest RMS peak fitting
-
-Don't penalize more peaks, since it's legitimate to have one peak or multiple peaks 
-
-Then move from N->C to look for max difference between coverage in Nterm vs Cterm for each peak
-
-variation 1 -> N
-```{r}
+# Positive and negative labels were for figuring score. 
+# Positives were proteins with interesting elution patterns, negatives were random
 
 set.seed(42)
 
@@ -689,60 +472,69 @@ labels <- bind_rows(
 labels %>% write_csv("labels.csv")
 labels <- read_csv("labels.csv")
 
+
+
+
 ```
+
+### Get smaller dataset of just labeled proteins
+```{r}
+
+short_tidy_unique_labeled <- short_tidy_unique %>% 
+        filter(ProteinID %in% labels$ProteinID) 
+
+```
+
 
 VILI4_ARATH, TSS_ARATH were used to calibrate gaussian git and downstream to log2fold change
 
 RFA1_HUMAN = has an N-terminal
 
+# Detection of proteoforms
+### Start proteoform detection process
 
+Modified AdaptGauss to fit up to 5 peaks, and run for more iterations (finds better fit)
 
+Returns lowest RMS peak fitting
 
+Don't penalize more peaks, since it's legitimate to have one peak or multiple peaks 
 
+Use the output of 
+
+Then move from N->C to look for max difference between coverage in Nterm vs Cterm for each peak
+
+variation 1 -> N
+
+# Part 1: AdaptGauss
 ##### Testing AdaptGauss prior to run on full set
 For one at a time
 This is for testing out modifications to the AdaptGauss
 ```{r}
 
-#testing single adaptgauss
+#testing AdaptGauss process on single protein
 
+# Filter dataset to just one protein in one experiment
 tester <- short_tidy_unique_peaks %>% 
-   # filter(grepl("VILI4_ARATH", ProteinID)) %>% 
-  #  filter(experiment_name == "ARATH_IEX1")
+   #filter(grepl("VILI4_ARATH", ProteinID)) %>% 
+   #filter(experiment_name == "ARATH_IEX1")
    #filter(ProteinID == "sp|P78347|GTF2I_HUMAN") %>%
    #filter(experimentiname== "HEKR_IEX2") %>%
-    # filter(ProteinID == "sp|P45974|UBP5_HUMAN") %>%
-  # filter(experiment_name== "HEMO_IEX1") 
-      filter(ProteinID == "sp|Q13576|IQGA2_HUMAN") %>%
+   #filter(ProteinID == "sp|P45974|UBP5_HUMAN") %>%
+   #filter(experiment_name== "HEMO_IEX1") 
+   filter(ProteinID == "sp|Q13576|IQGA2_HUMAN") %>%
    filter(experiment_name== "HEK_SEC1") 
 
+# See output of test
 possibly_get_boundaries(tester) %>% 
   left_join(select(tester, -peak), by = "FractionID") %>%
    ggplot(aes( color = as.factor(peak), alpha = pepcount)) +
        geom_point(aes(x = Start, y = FractionID)) +
-  facet_wrap(~experiment_name, scales = "free_y")
-
-
-
-testvect <- tester %>% select(FractionID, pepcount) %>%
-    uncount(pepcount) %>% pull(FractionID)
-testvect_solo <- tester %>% pull(FractionID)
-AdaptGauss(testvect, fast = T, ParetoRadius = 1)
-AdaptGauss(testvect_solo, fast = T, ParetoRadius = 2.5)
-c(seq(1,80), testvect_solo) %>% AdaptGauss(fast = T, ParetoRadius = 2.5)
-c(seq(1,80), testvect)  %>% hist(breaks = 100)
-
-#Try evaluating by RMS, not SSE
-
-tester %>% select(FractionID, pepcount) %>%
-    uncount(pepcount) %>% pull(FractionID) %>% AdaptGauss(fast = TRUE)
+   facet_wrap(~experiment_name, scales = "free_y")
 
 ```
 
 Peak fitting
 ```{r}
-#library(AdaptGauss)
-
 # About an hour
 plan("multisession")
 
@@ -753,8 +545,6 @@ peaks <-
   
   #filter(experiment_name == "ARATH_IEX1") %>%
   #filter(grepl("VILI4_ARATH", ProteinID)) %>%
-  #filter(experiment_name == "HEK_SEC2") %>%
-  #filter(grepl("GTF2I", ProteinID)) %>%
   split(list(.$ProteinID, .$experiment_name)) %>%
      future_map_dfr(~possibly_get_boundaries(.x), .id = "id", .progress = TRUE) %>% 
   separate(id, into = c("ProteinID", "experiment_name"), sep = "[.]")
@@ -763,8 +553,8 @@ peaks <-
 ```{r}
 
 # View peaks on protein
-short_tidy_unique_labeled %>% 
-  left_join(peaks)  %>%
+short_tidy_unique %>% 
+  inner_join(peaks)  %>%
     #filter(grepl("VILI4_ARATH", ProteinID)) %>% 
   
    filter(ProteinID == "sp|P78347|GTF2I_HUMAN") %>%
@@ -777,67 +567,20 @@ short_tidy_unique_labeled %>%
 peaks %>% write_csv("/project/cmcwhite/data/peptide_elutions/peaks_rms.csv")
 peaks <- read_csv("/project/cmcwhite/data/peptide_elutions/peaks_rms.csv")
 
-short_tidy_unique_labeled_peaks <-  short_tidy_unique_labeled %>%
-     left_join(peaks,  by = c("ProteinID","experiment_name", "FractionOrder"))
 
+# Only dataset of +/- labeled proteins for testing
+#short_tidy_unique_labeled_peaks <-  short_tidy_unique_labeled %>%
+#     left_join(peaks,  by = c("ProteinID","experiment_name", "FractionOrder"))
+
+
+# Full dataset
 short_tidy_unique_peaks <-  short_tidy_unique %>%
      left_join(peaks,  by = c("ProteinID","experiment_name", "FractionOrder"))
 
 ```
 
 
-##### Some testers for peak fitting
-Create example plot from this
-```{r}
-
-peakfitting_example_plot <- short_tidy_unique_peaks %>% 
- # left_join(peaks)  %>%
-    filter(grepl("CDC73_H", ProteinID)) %>% 
-    #filter(grepl("VILI4_ARATH", ProteinID)) %>% 
-  #  filter(ProteinID == "sp|Q13576|IQGA2_HUMAN") %>%
- #  filter(experiment_name== "HEK_SEC1") %>%
-    
-    #filter(ProteinID == "sp|P45974|UBP5_HUMAN") %>%
-  # filter(experiment_name== "HEMO_IEX1") %>%
-
-      
-  #  filter(ProteinID == "sp|O48963|PHOT1_ARATH") %>%
-    #filter(experiment_name %in% c("ARATH_SEC1")) %>%
-   #filter(experiment_name== "HEMO_IEX1") %>%
-   #filter(ProteinID == "sp|P20810|ICAL_HUMAN") %>%
-  # filter(grepl("CATC_HUMAN", ProteinID )) %>% 
-  #
-  # filter(ProteinID == "sp|P78347|GTF2I_HUMAN") %>%
-   #filter(ProteinID == "sp|P39023|RL3_HUMAN") %>%
-  #filter(experiment_name == "HEKR_IEX2") %>%
-  ggplot(aes( color = as.factor(peak), alpha = pepcount)) +
-       geom_point(aes(x = Start, y = FractionID)) +
-  coord_flip() +
-  scale_color_manual(values = palette) +
-  facet_wrap(~experiment_name, scales = "free_y") +
-  scale_x_reverse() +
-  xlab("Peptides C -> N")
-
-
-peakfitting_example_plot %>% ggsave("figures/peakfitting_example_phot1.png", .,device = "png", width = 3.5, height = 2.5,  units = "in")
-peakfitting_example_plot %>% ggsave("figures/peakfitting_example_phot1.pdf", .,device = "pdf", width = 3.5, height = 2.5,  units = "in")
-
-short_tidy_unique_peaks %>% 
-  filter(grepl("NASP", ProteinID)) %>%
-  #group_by(ProteinID, peak, experiment_name, FractionID) %>%
-  #   summarize(tot = sum(pepcount)) %>%
-  #ungroup() %>%
-  filter(experiment_name == "HEK_SEC1") %>%
-  ggplot(aes( color = as.factor(peak), alpha = pepcount)) +
-       geom_point(aes(x = Start, y = FractionID)) +
-  coord_flip() +
-  scale_color_manual(values = palette) +
-  facet_wrap(~experiment_name, scales = "free_y") +
-  scale_x_reverse() +
-  xlab("Peptides C -> N")
-```
-
-### Check peak fitting in proteins-of-interest
+### Checking peak fitting in proteins-of-interest
 ```{r}
   short_tidy_unique_peaks %>% 
   
@@ -868,92 +611,16 @@ short_tidy_unique_peaks %>%
 ```
 
 
-### Contrived gaussian fit peaks for illustrator vector images
-```{r}
-short_tidy_unique_peaks %>%
- filter(ProteinID == "sp|Q13283|G3BP1_HUMAN") %>% 
-  filter(experiment_name == "HEK_IEX1") %>%
-    ggplot(aes(x = FractionID, group =as.factor(peaks), weight = pepcount,  color = as.factor(hpeaks))) +
-  geom_density(adjust= 3) +
-  xlim(0, 50 ) + 
- # scale_color_manual(values = c("blue", "red")) +
-  theme_nothing()
-
-naps_elut_peaks <- short_tidy_unique_peaks %>%
-  filter(grepl("NASP", ProteinID)) %>%
-
-  filter(experiment_name == "HEK_SEC1") %>%
-  mutate(handsel_peaks = case_when(peak %in% c(0,1) ~ 1, 
-                                   peak %in% c(2,3) ~ 2)) %>%
-  filter(!is.na(handsel_peaks)) %>%
-  ggplot(aes(x = FractionID, group =as.factor(handsel_peaks), weight = pepcount,  color = as.factor(handsel_peaks))) +
-  geom_density(adjust= 3) +
-  xlim(0, 50 ) + 
-  scale_color_manual(values = c("blue", "red")) +
-  theme_nothing()
-
-naps_elut_peaks %>%
-  ggsave("nasp_elut_peaks.pdf", .,  device = "pdf")
-
-```
-
-
-## Figure 4?
-#### Elution plots, individual cases
-Doesn't go here
-```{r}
-short_tidy_unique_peaks %>% 
-    filter(grepl("MTV1_ARATH", ProteinID)) %>% 
-  ggplot(aes( color = as.factor(peak), alpha = pepcount)) +
-       geom_point(aes(x = Start, y = FractionOrder)) +
-  facet_wrap(~experiment_name, scales = "free_y")
-
-short_tidy_unique_peaks %>% 
-    filter(grepl("VILI4_ARATH", ProteinID)) %>% 
-  ggplot(aes( color = as.factor(peak), alpha = pepcount)) +
-       geom_point(aes(x = Start, y = FractionOrder)) +
-  facet_wrap(~experiment_name, scales = "free_y")
-
-short_tidy_unique_peaks %>% 
-    filter(grepl("ACT12_ARATH", ProteinID)) %>% 
-  ggplot(aes( color = as.factor(peak), alpha = pepcount)) +
-       geom_point(aes(x = Start, y = FractionOrder)) +
-  facet_wrap(~experiment_name, scales = "free_y")
-
-
-short_tidy_unique_peaks %>% 
-    filter(grepl("A0A2K3DUW9_CHLRE", ProteinID)) %>% 
-  ggplot(aes( color = as.factor(peak))) +
-       geom_point(aes(x = Start, y = FractionOrder)) +
-  facet_wrap(~experiment_name, scales = "free_y")
-
-short_tidy_unique_peaks %>% 
-    filter(ProteinID == "sp|Q13283|G3BP1_HUMAN") %>% 
-  filter(experiment_name == "HEK_IEX1") %>%
-  ggplot(aes( color = as.factor(peak))) +
-       geom_point(aes(x = Start, y = FractionOrder)) +
-  facet_wrap(~experiment_name, scales = "free_y")
-
-
-quick_plot_elution <- function(ProteinID, short_tidy_unique_peaks){
-  
-  short_tidy_unique_peaks %>% 
-    filter(grepl({{ProteinID}}, ProteinID)) %>% 
-  ggplot() +
-       geom_point(aes(x = Start, y = FractionOrder, alpha = pepcount, label = paste(Peptide, End))) +
-  facet_wrap(~experiment_name, scales = "free_y")
-  ggplotly()
-
-  
-}
 
 
 
-```
 
 
-## Fragment categorizing
-This is applied to each fitted peak, to get maximal terminal skew.
+First classify by eye
+Then classify by fit
+Then classify fit peaks manually
+
+This is applied to peptides under each fitted peak, to get maximal terminal skew.
 
 
 ### Filtering peaks by # of peptides
@@ -976,7 +643,7 @@ short_tidy_unique_peaks_expanded <- short_tidy_unique_peaks %>%
      separate(pepid, into = c("Start", "End"), sep = "-", convert = TRUE, remove = FALSE) %>% # get start and end for filled in peptides
     mutate(presence = replace_na(presence, "missing")) # Filled in peptides get zero presence
 
-# Get peaks that have at least 7 peptides spread across fractions
+# Get peaks that have at least 7 unique peptides
 enough_cov_peaks <- short_tidy_unique_peaks %>%
    filter(!is.na(peak)) %>%
     group_by(ProteinID, peak, experiment_name) %>%
@@ -994,8 +661,8 @@ short_tidy_unique_peaks_expanded_fragments  %>%
 
 ```
 
-
-Try calculation observable N -> C
+# Part 2: Calculate terminal bias
+Calculation observable N -> C
                            N - > Observable C
 ### Calibrating terminal scores
 ```{r}
@@ -1147,141 +814,15 @@ bps_identified %>%
 
 bps_identified <- 
   read_csv("data/bps_identified.csv")
-```
 
-
-### Indidividual domain organization plot
-
-# Downloaded from https://mobidb.org/ browse
-```{r}
-
-mobidb_human <- read_delim("/project/cmcwhite/data/exons/data/mobidb_human.txt", delim ="\t") 
-mobidb_arath <- read_delim("/project/cmcwhite/data/exons/data/mobidb_arath.txt", delim ="\t") 
-mobidb_chlre <- read_delim("/project/cmcwhite/data/exons/data/mobidb_chlre.txt", delim ="\t") 
-
-domains_dis <- bind_rows(
-  mobidb_chlre,
-  mobidb_human,
-  mobidb_arath
-) %>%
-  filter(feature %in%  c("prediction-disorder-mobidb_lite", "prediction-transmembrane-uniprot")) %>%
-  separate_rows(`start..end`, sep = ",") %>%
-  separate(`start..end`, into = c("ProtBegin", "ProtEnd"), sep = "[.][.]") %>%
-  mutate(ProtBegin = as.integer(ProtBegin)) %>%
-  mutate(ProtEnd = as.integer(ProtEnd)) %>%
-  rename(Entry = acc) %>%
-  select(Entry, ProtBegin, ProtEnd, feature) %>% 
-  mutate(set = case_when(feature == "prediction-disorder-mobidb_lite"~ "Disordered",
-                              feature == "prediction-transmembrane-uniprot" ~ "Transmembrane")) %>%
-  select(-feature)
-```
-
-Make annotation plots
-```{r}
-domains_dis
-
-domains_dis_formatted <- domains_dis%>%
-  select(Entry, ProtBegin,ProtEnd, set) %>%
-  mutate(Annotation ="Disordered") %>%
-  
-  mutate(ymin = case_when(set == "Disordered" ~ 0.8,
-                          set == "Transmembrane" ~ 1)) %>%
-   mutate(ymax = case_when(set == "Disordered" ~ 1,
-                          set == "Transmembrane" ~ 1.4))
-
-domains_pfam_formatted <- domains_pfam %>%
-  select(Entry, ProtBegin,ProtEnd, Annotation) %>%
-  mutate(ymin = 0.1, ymax = 0.8) %>%
-  mutate(set = 'Domains')
-
-domaindis_setup <- 
-  bind_rows(
-    domains_pfam_formatted,
-    domains_dis_formatted
-    
-  ) %>%
-  full_join(meta) %>%
-  mutate(set = fct_relevel(set, c("Domains", "Disordered", "Transmembrane"))) %>%
-  filter(!is.na(Entry_name)) # There are some other proteins brought in with pfam
-
-domaindis_setup %>%
-  write_tsv("data_files/domaindis_setup.txt")
-
-domaindis_setup
-domaindis_setup %>%
- # filter(Entry_name == "RK2_CHLRE") %>%
- filter(Entry_name == "MER34_HUMAN") %>%
-  ggplot() +
-  geom_rect(fill = "grey90", aes(xmin = 0, xmax = seqlen, ymin = 0.1, ymax = 0.8)) +
-  geom_rect(aes(xmin = ProtBegin, xmax = ProtEnd, ymin = ymin, ymax = ymax, fill = set)) +
-  theme(axis.line.x = element_blank(),
-        axis.text.x = element_blank(),
-        axis.ticks.x= element_blank(),
-        axis.line.y = element_blank(),
-        axis.title.y = element_blank()) +
-  coord_flip() +
-  scale_fill_manual(values = c("orange", "cadetblue4", "purple")) +
-  scale_y_continuous(limits = c(0,15), expand = c(0,0)) +
-  scale_x_reverse(expand = c(0,0)) +
-  #scale_y_continuous()
-  geom_text_repel(y = 1, ylim = c(1,15), aes(x = ProtBegin, label = Annotation)) +
-  theme(legend.position = "none") 
-  
-  
-
+# Then go to elution_viewer.Rmd to look
 ```
 
 
 
+# Part 3: Curating proteins with high terminal bias
+#### Select proteins with high terminal bias, then confirm with elution_viewer.Rmd
 ```{r}
-
-domaindis_setup <- read_tsv("data_files/domaindis_setup.txt")
-  domain_dis_plot <- domaindis_setup %>%
-  filter(Entry_name == "WDR44_HUMAN") %>%
-    mutate(label = str_replace(Entry_name, "_", "\n")) %>%
-    mutate(label = str_replace(label, "A0A2K3", "c")) %>%
-  
-  ggplot() +
-  geom_rect(fill = "grey90", aes(xmin = 0, xmax = seqlen, ymin = 0.1, ymax = 0.8)) +
-  geom_rect(aes(xmin = ProtBegin, xmax = ProtEnd, ymin = ymin, ymax = ymax, fill = set)) +
-  theme(axis.line.y = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks.y= element_blank(),
-        axis.line.x = element_blank(),
-        axis.title.x = element_blank()) +
-  scale_fill_manual(values = c("orange", "cadetblue4")) +
-  scale_y_continuous(limits = c(0,2), expand = c(0,0)) +
-  #scale_x_reverse(expand = c(0,0)) +
-  geom_text_repel(alpha = 0.7, y = 1, ylim = c(1,2), size = 2.5, aes(x = ProtBegin, label = Annotation)) +
-  theme(legend.position = "none") +
-    facet_wrap(~label, ncol = 1, strip.position = "left")
-
-domain_dis_plot
-
-
-
-```
-
-
-
-```{r}
-labels %>%
-  filter(!grepl("HEKB", experiment_name)) %>%
-  left_join(bps_identified) %>% 
-  select(ProteinID, experiment_name, set, label, abs_log2fc) %>% 
-  group_by(ProteinID, experiment_name, set, label) %>%
-     summarize(max_abs_log2fc = max(abs_log2fc)) %>%
-  ungroup %>%
-  mutate(max_abs_log2fc = replace_na(max_abs_log2fc, 0)) %>%
-  ggplot(aes(x = max_abs_log2fc, color = label)) +
-  geom_density()
-
-```
-
-
-```{r}
-
-
 priority <- bps_identified %>% 
   separate(ProteinID, into =c(NA, NA, "Entry_name"), sep = "[|]") %>% 
   
@@ -1334,27 +875,6 @@ unique_peps_per_fragment <- fragment_data %>%
      summarize(distinct_peptides = n_distinct(Peptide)) %>%
   ungroup() 
 
-#  Get first and last peptide in fragmentw
-#fragment_data_peptide <- fragment_data %>% 
-#  inner_join(over2_peptide_counts) %>%
-#  
-#  select(ProteinID, experiment_name, Start, End, seqlen, peakid, term, Peptide) %>%
-#  arrange(ProteinID, Start, End) %>%
-#  unique() %>%
-#  group_by(ProteinID, peakid, term) %>%
-#     summarize(first_pep = first(Peptide), last_pep = last(Peptide) )
-#     #mutate(n_terminal_pep = case_when(term %in% c("nterm", "internal", "full") & End == max(End) ~ TRUE,
-#     #                                term %in% c("cterm", "internal", "full") & Start == min(Start) ~ TRUE)) %>%
-#  ungroup %>%
-#  filter(terminal_pep == TRUE) %>%
-#  select(ProteinID, term, Peptide)
-#    filter(terminal_pep == TRUE) %>%
-#    mutate(cterm_pos = case_when(term %in% c("nterm", "internal") ~ End, TRUE ~ seqlen)) %>%
-#    mutate(nterm_pos = case_when(term %in% c("cterm", "internal") ~ Start, TRUE ~ 1))  %>% 
-#    mutate(loc = case_when(term == "nterm" ~ cterm_pos, 
-#                        term == "cterm" ~ nterm_pos)) %>% 
-#  separate(ProteinID, into = c(NA, "Entry", "Entry_name"), sep = "[|]", remove = FALSE) 
-
 
 fragment_data_terminal <- fragment_data %>%
   inner_join(over2_peptide_counts) %>%
@@ -1370,6 +890,9 @@ fragment_data_terminal <- fragment_data %>%
   mutate(in_SEC = case_when(grepl("SEC", exps) ~ TRUE)) %>%
   mutate(in_IEX = case_when(grepl("IEX", exps) ~ TRUE)) 
 
+fragment_data_terminal %>% write_csv("/project/cmcwhite/data/fragment_data_terminal.csv")
+fragment_data_terminal <- read_csv("/project/cmcwhite/data/fragment_data_terminal.csv")
+
 domain_coverage 
 
 ## number of unique peptides in fragment
@@ -1378,8 +901,8 @@ domain_coverage
 
 ```
 
-
-Table of what parts of sequence are missing from uniprot
+# Isoform comparison
+### Table of what parts of sequence are missing from uniprot
 ```{r}
 uniprot_missing_human <- read_tsv("uniprot-human-missing-from-isoform.tab")
 uniprot_missing_arath <- read_tsv("uniprot-arath-missing-from-isoform.tab")
@@ -1423,7 +946,7 @@ uniprot_truncation_variants <- uniprot_missing_tbl %>%
 
 
 
-# This is the best way to do isoform comparison so far
+### This is the best way to do isoform comparison so far
 ```{r}
 candidate_isoform_matches <- fragment_data_terminal %>%
 
@@ -1483,7 +1006,7 @@ UBP15 has a fragment that's a similar length to isoform3, but has a different te
 Combined with the c-terminal observation, likely a proteolysis
 
 
-What domains are in which fragments?
+# What domains are in which fragments?
 ```{r}
 
 # Get domains fully contained in fragments
@@ -1505,7 +1028,7 @@ domains_pfam
 
 
 
-Supplemental table 1, annotation of all found fragments
+# Supplemental table 1, annotation of all found fragments
 ```{r}
 
 identified_isoforms_formatted_annot <- identified_isoforms  %>%
@@ -1530,6 +1053,181 @@ fragment_data_terminal_annotated %>%
   arrange(desc(`Truncated proteins in euNOG group`), `euNOG ID`, ProteinID) %>%
   write_xlsx("Supplemental_File1.xlsx")
 
+
+
+
+```
+
+# Figures 
+
+
+# Figure 3A: Calpastatin
+```{r}
+
+# plots as IEX then SEC
+calp_hemo <-    short_tidy_unique %>%  filter(ProteinID == "sp|P20810|ICAL_HUMAN") %>% #
+ 
+  filter(grepl("HEMO", experiment_name)) %>%
+  filter(experiment_name %in% c("HEMO_SEC2", "HEMO_IEX1")) %>%
+  mutate(experiment_name = fct_relevel(experiment_name,c("HEMO_SEC2", "HEMO_IEX1") ))%>%
+  b_w_plot(pubtheme = FALSE)
+
+calp_hek <-short_tidy_unique %>%  filter(ProteinID == "sp|P20810|ICAL_HUMAN") %>% #
+ 
+  filter(grepl("HEK", experiment_name)) %>%
+  filter(experiment_name %in% c("HEK_IEX1", "HEK_SEC1")) %>%
+    mutate(experiment_name = fct_relevel(experiment_name,c("HEK_SEC1", "HEK_IEX1") )) %>%
+  b_w_plot(pubtheme = FALSE)
+
+calp_hemo
+calp_hek
+
+
+Figure_calp <- plot_grid(calp_hek, calp_hemo)
+
+Figure_calp  %>% ggsave("figures/Figure_calp.png", ., width = 3, height = 1.5)
+Figure_calp  %>%  ggsave("figures/Figure_calp.pdf", ., width = 3, height = 1.5)
+
+
+```
+
+
+USP15 complex for figure 7
+
+```{r}
+
+
+# HEMO_IEX1, 2, SEC1, 2
+usp15 <- short_tidy_unique %>% 
+  filter(grepl("UBP15", ProteinID)) %>% 
+  filter(grepl("HEMO", experiment_name)) %>%
+  b_w_plot()
+
+# HEK_IEX1, 2, SEC1, 2
+usp15_hek <- short_tidy_unique %>% 
+  filter(grepl("UBP15", ProteinID)) %>% 
+  filter(grepl("HEK_", experiment_name))  %>%
+  b_w_plot() 
+
+nqo2 <- short_tidy_unique %>% 
+  filter(grepl("NQO2", ProteinID)) %>% 
+  filter(grepl("HEMO", experiment_name)) %>%
+  b_w_plot() 
+
+nqo2_hek <- short_tidy_unique %>% 
+  filter(grepl("NQO2", ProteinID)) %>% 
+  filter(grepl("HEK_", experiment_name)) %>%
+  b_w_plot() 
+
+# Only in hemolysate
+tng2 <- short_tidy_unique %>% 
+  filter(grepl("HEMO", experiment_name)) %>%
+  b_w_plot(pubtheme = TRUE) 
+
+
+tng2_hek <- short_tidy_unique %>% 
+   filter(ProteinID == "sp|Q6ICL3|TNG2_HUMAN") %>% 
+  filter(grepl("HEK_", experiment_name)) %>%
+  b_w_plot(pubtheme = TRUE) 
+
+
+ahsp <- short_tidy_unique %>% 
+  filter(ProteinID == "sp|Q9NZD4|AHSP_HUMAN") %>% # Pretty good, not in hek though
+ 
+  filter(grepl("HEMO", experiment_name)) %>%
+  b_w_plot(pubtheme = TRUE) 
+
+
+ahsp_hek <- short_tidy_unique %>% 
+  filter(ProteinID == "sp|Q9NZD4|AHSP_HUMAN") %>% # Pretty good, not in hek though
+ 
+  filter(grepl("HEK_", experiment_name)) %>%
+  b_w_plot(pubtheme = TRUE) 
+
+
+hemoglobin <- short_tidy_unique %>%
+  filter(ProteinID == "sp|P69905|HBA_HUMAN") %>%
+    filter(grepl("HEMO", experiment_name)) %>%
+  b_w_plot(pubtheme = TRUE) 
+
+plot_grid( hemoglobin, usp15,ncol = 1, rel_heights = c(0.5, 1))
+
+
+rfc4 <- short_tidy_unique %>% 
+  filter(ProteinID == "sp|P35249|RFC4_HUMAN") %>% 
+ 
+#  filter(grepl("HEMO", experiment_name)) %>%
+  b_w_plot(pubtheme = FALSE) 
+
+
+
+combo <- plot_grid(nqo2, tng2, ahsp, usp15, ncol = 1, rel_heights = c(0.6, 1, 0.5, 3))
+combo
+combo %>%
+  ggsave("figures/usp_tng2_ahsp_nqo2.png", .)
+combo %>%
+  ggsave("figures/usp_tng2_ahsp_nqo2.pdf", .)
+
+
+
+
+combo_hek <- plot_grid(nqo2_hek, usp15_hek, ncol = 1, rel_heights = c(1, 1))
+combo_hek %>%
+  ggsave("figures/usp_nqo2_hek.png", .)
+combo_hek %>%
+  ggsave("figures/usp_nqo2_hek.pdf", .)
+
+
+```
+
+
+# Figure 4?
+#### Elution plots, individual cases
+```{r}
+short_tidy_unique_peaks %>% 
+    filter(grepl("MTV1_ARATH", ProteinID)) %>% 
+  ggplot(aes( color = as.factor(peak), alpha = pepcount)) +
+       geom_point(aes(x = Start, y = FractionOrder)) +
+  facet_wrap(~experiment_name, scales = "free_y")
+
+short_tidy_unique_peaks %>% 
+    filter(grepl("VILI4_ARATH", ProteinID)) %>% 
+  ggplot(aes( color = as.factor(peak), alpha = pepcount)) +
+       geom_point(aes(x = Start, y = FractionOrder)) +
+  facet_wrap(~experiment_name, scales = "free_y")
+
+short_tidy_unique_peaks %>% 
+    filter(grepl("ACT12_ARATH", ProteinID)) %>% 
+  ggplot(aes( color = as.factor(peak), alpha = pepcount)) +
+       geom_point(aes(x = Start, y = FractionOrder)) +
+  facet_wrap(~experiment_name, scales = "free_y")
+
+
+short_tidy_unique_peaks %>% 
+    filter(grepl("A0A2K3DUW9_CHLRE", ProteinID)) %>% 
+  ggplot(aes( color = as.factor(peak))) +
+       geom_point(aes(x = Start, y = FractionOrder)) +
+  facet_wrap(~experiment_name, scales = "free_y")
+
+short_tidy_unique_peaks %>% 
+    filter(ProteinID == "sp|Q13283|G3BP1_HUMAN") %>% 
+  filter(experiment_name == "HEK_IEX1") %>%
+  ggplot(aes( color = as.factor(peak))) +
+       geom_point(aes(x = Start, y = FractionOrder)) +
+  facet_wrap(~experiment_name, scales = "free_y")
+
+
+quick_plot_elution <- function(ProteinID, short_tidy_unique_peaks){
+  
+  short_tidy_unique_peaks %>% 
+    filter(grepl({{ProteinID}}, ProteinID)) %>% 
+  ggplot() +
+       geom_point(aes(x = Start, y = FractionOrder, alpha = pepcount, label = paste(Peptide, End))) +
+  facet_wrap(~experiment_name, scales = "free_y")
+  ggplotly()
+
+  
+}
 
 
 
@@ -1684,7 +1382,7 @@ fragment_data %>%
 
 ```
 
-MARKER
+
 Do cases of where fragment found, but no full length(?) detected (not just disordered parts). Check images on preprocess
 ```{r}
 
@@ -1701,7 +1399,7 @@ prots_w_domains_exps <-
 
 ```
 
-
+# Figure 6A: Only termini detected
 ```{r}
 first_domain <- domains_pfam %>%
   group_by(Entry) %>%
@@ -1774,10 +1472,6 @@ bind_rows(fragment_data_terminal_prefirst, fragment_data_terminal_postlast) %>%
 preprocess %>% filter(Entry_name %in% c("INT3_HUMAN", "WDR44_HUMAN", "CTR9_HUMAN", "RFC1_HUMAN",  "EIF3B_HUMAN", "RU17_HUMAN", "SRP72_HUMAN")) %>%
   b_w_plot()
 
-
-
-
-
 ```
 
 
@@ -1839,7 +1533,6 @@ plot_grid(priority_plot, peptide_stats_plot)
 
 
 ### Extract out fragment peaks, and do individual correlations
-### TODO: Change this with manually selected peaks 
 ```{r}
 
 extra_copd <- tibble(experiment_name = c("HEK_IEX1","HEK_IEX1","HEK_IEX2","HEK_IEX2","HEK_IEX2"), spec = c("human","human","human","human","human"),
@@ -2825,7 +2518,7 @@ positives_annot <- positives %>%
   mutate(label = "Hand selected")
 
 bps_screened <- bps_identified %>%
-  filter(abs_log2fc >= 4.18)
+  filter(abs_log2fc >= 3)
   
 
 fragment_data_terminal_expand <-
@@ -2971,7 +2664,7 @@ mutate(Sample = case_when(
                                 "HEK" = palette[2], 
                                 "Hemolysate" =palette[4])) +
   scale_x_continuous(labels = scales::comma, breaks = c(400000,800000)) +
-  xlab("Total unique PSMs") + 
+  xlab("Total PSMs") + 
   ylab("# Proteins with truncation proteoforms")
 
 stats_plot
@@ -2981,9 +2674,7 @@ stats_plot %>% ggsave("figures/stats_plot.pdf", ., device = "pdf", width = 3, he
 
 # As peptide detection gets deeper, more proteoforms will be discoverable by this method
 
-#Proteoforms previously only detectable by custom constructs
 
-#Highlight deep fractionation
 ```
 
 
@@ -2995,8 +2686,8 @@ right <- plot_grid(score_dist_plot, stats_plot + theme(legend.position = "bottom
 
 figure2_generated <- plot_grid(left, NULL, right, ncol = 3, rel_widths = c(1,0.2,1))
 
-figure2_generated %>% ggsave("figures/figure2_generated.png", .,device = "png", width = 6, height = 6,  units = "in")
-figure2_generated  %>% ggsave("figures/figure2_generated.pdf", ., device = "pdf", width = 6, height = 6, units = "in")
+figure2_generated %>% ggsave("figures/figure2_generated.png", .,device = "png", width = 5, height = 5,  units = "in")
+figure2_generated  %>% ggsave("figures/figure2_generated.pdf", ., device = "pdf", width = 5, height = 5, units = "in")
 
 
 
@@ -3454,2573 +3145,6 @@ bps_loc %>% ungroup %>%
 ```
 
 
-# Different proteoforms of Calpastatin  Free C-terminal calpain 
-https://www.sciencedirect.com/science/article/pii/S0167488914002389
 
-
-PHOT1 conserved with chlamydomonas
-Q8LPD9 It's a hinge control. 
-
-SART3_HUMAN missing an N-terminus in some cases
-
-#sp|P35579|MYH9_HUMAN           HEKR_IEX1 Loss of short disordered terminus
-https://www.researchgate.net/publication/264433993_Life_without_double-headed_non-muscle_myosin_II_motor_proteins/figures?lo=1&utm_source=google&utm_medium=organic
-
-MYC9 1650-1960 has independent activity against virus
-https://www.sciencedirect.com/science/article/abs/pii/S016635421830024X
-
-#tr|A0A2K3DHP9|A0A2K3DHP9_CHLRE CHLRE_IEX1 is hit for loss of disordered in Chlamydomonas, not in positives list
-
-#sp|Q8TEQ6|GEMI5_HUMAN          HEKR_SEC2 vs HEK_SEC2 Candidate RNA-dependent fragment     
-# With RNASE, the RNA binding first half goes away
-#https://www.biorxiv.org/content/10.1101/654111v1.full.pdf <- !
-#Shows detection of the "P85" fragment, finds viral protease that cleaves it with specific site
-# Remarkably, the expression of p85 in human cells stimulates viral IRES-driven translation, contrary to the negative effect of Gemin5 in translation [73,74].
-https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7311978/
-
-#RL10A has drop out of peptide from 28 - 44
-#\tF[IL]ETVE[IL]Q[IL]S[IL]K
-#"FJETVEJQJSJK"
-This peptide is ONLY found with RNASE addition
-Candidate for a new RNA-dependent PTM?
-
-Peptide starts right after a lysine K that shows bonds with rRNA bases. Could interfere with trypsin
-
-
-
-
-
-# Need
-
-#TO DO 
-# Track why some proteins returned no data. 
-#compare to positive and negatives
-
-
-# use peporder, not Start
-
-#use order of positions in protein?
-# For peptides in each fragment, take distance to median of total. 
-# Whole protein peaks should be about zero
-# Skewed peaks will be positive or negative
-
-
-
-
-Interactions
-
-
-BioGRID compare
-```{r}
-biogrid <- read_tsv("biogrid/BIOGRID-ALL-4.2.192.tab3.txt")
-
-new_positives <- read_csv("positives/new_positives.csv") %>%
-  separate(filename, into = c(NA, NA, NA, "Entry", NA, NA), sep = "_")
-
-biogrid %>%
-  filter(`SWISS-PROT Accessions Interactor A` %in% new_positives$Entry) %>% View()
-
-
-#HEK_IEX1_sp_Q9Y2J2_E41L3_HUMAN.tiff
-
-```
-
-
-
-
-
-Get actual last position
-```{r}
-elut_wide_sel <- elut_wide_identified %>%
-  separate(ProteinID, into = c(NA, "Entry", "Entry_name"), sep = "[|]", remove = FALSE) %>% 
-  filter(Entry_name %in% bps$Entry_name) 
-
-
-elut_long %>%
-  separate(ProteinID, into = c(NA, "Entry", "Entry_name"), sep = "[|]", remove = FALSE) %>% 
-  filter(Entry_name %in% bps$Entry_name)
-
-
-col_order <- elut_wide_sel %>%
-  select(experiment_name, starts_with("X")) %>%
-  unique %>%
-  pivot_longer(cols= starts_with("X"),names_to = "fraction", values_to = "val") %>%
-  select(-val) %>%
-  unique %>%
-  mutate(colnames = paste(fraction, experiment_name, sep = "_"))
-
-
-
-elut_wider_sel <- elut_wide_sel %>% 
-  select(ProteinID, Entry_name, Peptide, peporder,   experiment_name,  starts_with('X')) %>%
-  pivot_wider(id_cols = c(ProteinID, Entry_name, peporder, Peptide), names_from = experiment_name, values_from = starts_with("X")) %>%
-  select( Entry_name, ProteinID, peporder, Peptide, col_order$colnames)
-  
-
-elut_wide_sel_seq <- elut_wide_sel %>%
-  select(ProteinID, Peptide) %>%
-  unique %>%
-  left_join(human_proteome, by = c("ProteinID" = "ID")) 
-
-elut_wide_sel_cov <-cov_columns(elut_wide_sel_seq)
-
-# Got to generate figs...
-approx_bps <- read_csv("data_files/approx_loc.txt") %>%
-  select(Entry_name, loc) %>% unique
-# This missing lots (i.e. pur2_human pfam domains)
-
-
-
-
-elut_wide_sel_cov  <- elut_wide_sel_cov %>%
-  select(-Sequence) %>%
-  right_join(elut_wider_sel, by = c("ProteinID", "Peptide")) %>%
-  right_join(approx_bps, by = "Entry_name") %>%
-  rename(estimated_loc =loc) 
-  
-elut_wide_sel_cov[is.na(elut_wide_sel_cov)] <- 0
-
-elut_wide_sel_cov %>%  write_csv("selected_wide_peptide_elution.csv")
-  
-# Hopefully good format for telling what the last peptide is  
-  
-
-
-
-```
-
-```{r}
-
-protein = "UBP15_HUMAN"
-exps =  c( "HEMO_SEC1", "HEK_SEC1", "HEMO_IEX2")
-  
-elut_tidy_sel <- elut_long %>% 
-      filter(experiment_name %in% exps) %>%
-      mutate(experiment_name = fct_relevel(experiment_name, exps)) %>%
-      filter(grepl(protein, ProteinID)) 
-  
-  
-
-df_form <- df_cov %>%
-  select(-ProteinID, -Sequence) %>%
-  select(Peptide, start, end) %>%
-     mutate(rounddown = plyr::round_any(start,100, floor)) %>%
-     arrange(start, end) %>%
-     group_by(rounddown) %>%
-         mutate(label = case_when(row_number() == 1 ~ rounddown
-                                  )) %>%
-     ungroup() %>%
-     mutate(fillcolor = case_when(!is.na(label) ~ "black")) 
-df_form$label[is.na(df_form$label)] <- ""
-
-elut_cov <-  elut_tidy_sel %>% 
-  left_join(df_form, by = "Peptide") 
-
-
-elut_tidy_sel$Peptide %>% unique
-
-
-hm <- elut_cov %>%
-  ggplot(aes( x = FractionID, 
-              y = fct_rev(fct_reorder(Peptide,start)), 
-              fill = normpep)) +
-  geom_tile() +
-  scale_fill_continuous(low = "white", high = "black") +
-  scale_x_discrete(expand = c(0,0)) +
-  scale_y_discrete(labels = rev(df_form$label)) + 
-  theme(legend.position = "none",
-        axis.text.x = element_blank(),
-        axis.title.y = element_blank(),
-        axis.title.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        axis.ticks.y = element_blank(),
-        panel.spacing = unit(0.2, "lines"),
-        plot.margin = unit(c(1,-10,1,0), "lines"),
-        strip.background = element_blank()) +
-  panel_border(colour = "black") + 
-  facet_wrap(~experiment_name, nrow = 1, scales = "free_x") 
-
-hm
-
-ggplotly()
-
-
-y_labels <- axis_canvas(hm, axis = "y") +
-  geom_text(data = elut_cov, aes(y =fct_rev(fct_reorder(Peptide,start)), label = label))
-
-y_labels
-
-dev.off()
-df_cov %>%
-  ggplot(aes(x = 1, y = ))
-ggplotly()
-
-
-y_labels <- axis_canvas(hm, axis = "y") +
-  geom_text(data = df_form, aes(x = 0, y =start, label = label))
-  #geom_text(data = df %>% group_by(melano) %>% summarise(max_female = max(fema.meanB, na.rm = T)), aes(x = 0, y = max_female, color = melano, label = melano)) +
-  scale_color_manual(values = c("#37454B", "#F2C500"))
-
-# make combined plot
-combined_plot <- insert_yaxis_grob(hm, y_labels, position = "right")
-ggdraw(combined_plot)
-
-
-
-View(df_form)
-c <-df_form %>%
-  ggplot(aes(x = 1, 
-             y = fct_rev(fct_reorder(Peptide, start)),
-             #y = fct_rev(as.factor(start)), 
-             fill = fillcolor, label = Peptide)) + 
-  geom_tile() +
-  geom_text(color = "red") +
-  scale_fill_manual(values = "black", na.value = "white") +
-  theme_nothing()
-ggplotly()
-b <- df_form %>%
-  ggplot(aes(x = 1, y = fct_rev(fct_reorder(Peptide, start)), label=label)) + 
-  geom_text() +
-  theme_nothing()
-
-b + c + a + plot_layout(widths = c(1,1,20))
-
-
-
-
-cei
-
-
-```
-
-
-EIF5B
-```{r}
-#In arabidopsis it's F4I420
-
-#Appears to be a short 
-
-
-```
-
-
-
-
-
-```{r}
-
-
-data_path <- "data"
-pep_elut_files <- dir(data_path, pattern = "*pepcount.tidy") # Get filenames
-
-elut_tidy <- tibble(filename = pep_elut_files) %>%
-               mutate(file_contents = map(filename, ~ read_csv(file.path(data_path, .)))) %>%
-               unnest() %>%
-               select(-filename) 
-
-
-#If you somehow identify both I and L at same position
-#It's happened before
-elut_tidy_unique <- elut_tidy %>%
-        mutate(Peptide = str_replace_all(Peptide, "[I|L]", "J")) %>%
-       group_by(ExperimentID, FractionID, Peptide) %>%
-        summarize(PeptideCount= sum(PeptideCount, na.rm = TRUE))
-
-  
-fraction_meta <- elut_tidy_unique %>% 
-  select(ExperimentID, FractionID) %>%
-  unique %>%
-  group_by(ExperimentID) %>%
-        mutate(fracorder = row_number()) %>%
-     ungroup()
-
-
-elut_tidy_annot <- left_join(elut_tidy_unique, exp_meta, by = "ExperimentID") %>%
-    left_join(fraction_meta, by = c("ExperimentID", "FractionID"))
-
-elut_tidy_identified <- elut_tidy_annot %>%
-                           inner_join(unique_peptides_ordered, by = c("Peptide", "spec")) 
-
-
-elut_tidy_norm <- elut_tidy_identified %>%
-                    group_by(Peptide, ExperimentID) %>%
-
-                    mutate(PeptideCount = PeptideCount/max(PeptideCount)) %>% 
-                    ungroup 
-elut_tidy_norm %>%
-  filter(ProteinID == "sp|P13667|PDIA4_HUMAN") %>% filter(Peptide == "FDVSGYPTJK") %>% View()
-
-
-
-```
-
-#Splicing figures
-```{r splicing}
-
-helper <- function(elut_tidy, proteome, df_meta, exps, protein, rel_widths, figwidth, figheight, units, outfile_base){
-
-#elut_tidy <- elut_tidy_norm
-#proteome <- proteome
-#exps =  c("HEK_SEC1", "HEK_SEC2", "HEK_IEX1", "HEK_IEX2")
-#protein = "PUR2_HUMAN"
-
-    df_meta_sel <- df_meta %>% filter(ExperimentName %in% exps)
-    
-    df_fracorder <- df_meta_sel %>%
-                     select(ExperimentName, FractionID) %>% unique %>%
-                     group_by(ExperimentName) %>%
-                         mutate(FractionID_order = rank(FractionID)) %>% ungroup
-  
-
-    df_sel <- elut_tidy %>% filter(ExperimentName %in% exps) %>% 
-         filter(grepl(protein, ID)) 
-    
-    df_peps <- df_sel %>% 
-                    select(Peptide, ID) %>% 
-                    unique
-    
-    df_seq <- left_join(df_peps, proteome, by = "ID")
-
-    
-    df_cov <- cov_columns(df_seq)
-    
-    
-    df_complete <- df_sel %>% select(-ID) %>% complete_fxn(., df_meta_sel) 
-    
-    df_start_info <- df_cov %>% 
-        select(Peptide, start, length)
-
-
-    df_full <- left_join(df_complete, df_start_info, by = c("Peptide"))  %>%
-                  left_join(    df_fracorder, by = c("ExperimentName", "FractionID"))
-  
-    # As psuedocount to zeros that are before or after values,
-    # So than min_height remove lines of zeroes
-    df_full <- df_full %>% 
-                   arrange(ExperimentName, start) %>%
-                   group_by(Peptide, ExperimentName) %>%
-                      mutate(PeptideCount= case_when(PeptideCount == 0 & lag(PeptideCount > 0) ~ 0.01,
-                                              PeptideCount == 0 & lead(PeptideCount > 0) ~  0.01,
-                                              TRUE ~ PeptideCount
-                                              
-                                              )) %>% ungroup 
-
-
-    spark_plot <- pep_sparkline_fxn(df_full) + theme(axis.text.y = element_blank())
-    pepcov_plot <- pepcov_fxn(df_cov)
-    final <- plot_grid(pepcov_plot, spark_plot, align = "h", axis = "tb", rel_widths = rel_widths)
-
-    
-    
-    pdf_filename <- paste0(outfile_base, ".pdf")
-    png_filename <- paste0(outfile_base, ".png")
- 
-    print(png_filename)
-    
-    final %>% ggsave(png_filename, .,device = "png", width = figwidth, height = figheight,  units = units)
-    print(pdf_filename)
-    
-    final %>% ggsave(pdf_filename, ., device = "pdf", width = figwidth, height = figheight, units = units)
-    return(final)
-
-
-}
-
-
-nasp <-  helper(elut_tidy_norm, proteome, df_meta,  c("HEK_SEC1", "HEK_SEC2"), "NASP_HUMAN", rel_widths = c(1,2), figwidth = 3, figheight = 2.5, units = "in", outfile_base = "images/plot_NASP")
-
-
-gart <- helper(elut_tidy_norm, proteome,  df_meta, c("HEK_SEC1", "HEK_SEC2", "HEK_IEX1", "HEK_IEX2"), "PUR2_HUMAN", rel_widths = c(1,4), figwidth = 6, figheight = 3, units = "in", outfile_base = "images/plot_GART")
-
-nltp <- helper(elut_tidy_norm, proteome,  df_meta, c("HEK_SEC1", "HEK_SEC2", "HEK_IEX2"), "NLTP_HUMAN", rel_widths = c(1,2), figwidth = 6, figheight = 3, units = "in", outfile_base = "images/plot_NLTP_HUMAN")
-
-parp <- helper(elut_tidy_norm, proteome,  df_meta, c("HEK_IEX1", "HEK_IEX2"), "PARP1_HUMAN", rel_widths = c(1,2), figwidth = 5, figheight = 3, units = "in", outfile_base = "images/plot_PARP")
-
-
-pdli5 <- helper(elut_tidy_norm, proteome,  df_meta, c("HEK_IEX1", "HEK_IEX2"), "PDLI5_HUMAN", rel_widths = c(1,2), figwidth = 5, figheight = 3, units = "in", outfile_base = "images/plot_PDLI5")
-
-osr1 <- helper(elut_tidy_norm, proteome,  df_meta, c("HEK_SEC1", "HEK_SEC2", "HEMO_SEC2"), "OXSR1_HUMAN", rel_widths = c(1,4), figwidth = 3, figheight = 3, units = "in", outfile_base = "images/plot_OXSR1")
-
-ubp15 <- helper(elut_tidy_norm, proteome,  df_meta, c("HEK_SEC1", "HEK_SEC2", "HEMO_IEX1", "HEMO_IEX2"), "UBP15_HUMAN", rel_widths = c(1,4), figwidth = 6, figheight = 3, units = "in", outfile_base = "images/plot_UBP15")
-
-
-
-ank <- helper(elut_tidy_norm, proteome,  df_meta, c("HEMO_SEC1", "HEMO_SEC2", "HEMO_IEX1", "HEMO_IEX2"), "ANK1_HUMAN", rel_widths = c(1,2), figwidth = 6, figheight = 3, units = "in", outfile_base = "images/plot_ANK1")
-
-abcf <- helper(elut_tidy_norm, proteome,  df_meta, c("HEK_SEC1", "HEK_IEX1", "HEMO_IEX1", "HEMO_IEX2"), "ABCF1_HUMAN", rel_widths = c(1,2), figwidth = 4, figheight = 3, units = "in", outfile_base = "images/plot_ABCF1")
-
-TC159_ARATH = known proteolysis event
-
-```
-
-Assemble figures
-
-New discoveries
-```{r}
-top_newdisc <- plot_grid(NULL, pdli5, 
-          NULL, osr1, NULL, 
-          nrow = 1, 
-
-          rel_widths = c(0.2,1.2,0.5, 1.5,0.8))
-mid_newdisc <- plot_grid(NULL, ubp15, nrow = 1, rel_widths = c(0.1,1))
-
-bottom_newdisc <- plot_grid(NULL, abcf, nrow = 1, rel_widths = c(0.1,1))
-
-newdisc <- plot_grid(NULL, 
-                     top_newdisc, 
-                     NULL, 
-                     mid_newdisc,
-                     NULL, 
-                     bottom_newdisc,
-                     rel_heights = c(0.1, 0.8, 0.1,1, 0.1,1), 
-                     ncol = 1)
-
-newdisc %>% ggsave("figures/newdisc.png", .,  device = "png", height = 5, width = 6, units = "in")
-# Where is the "NA"
-
-abcf
-
-```
-
-Splices
-```{r}
-splicing_top <- plot_grid(NULL, nasp, NULL, nrow = 1, rel_widths = c(0.3,1,0.4))
-
-splicing_bottom <- plot_grid(NULL, gart, nrow = 1, rel_widths = c(0.3,1.4))
-
-splicing <- plot_grid(NULL, splicing_top,NULL, splicing_bottom, ncol = 1, rel_heights = c(0.1,1,0.1,1))
-
-splicing %>% ggsave("figures/splicing.png", .,  device = "png", height = 4, width = 5, units = "in")
-
-```
-
-Proteolysis
-#Space for one more proteolysis
-```{r}
-proteo_top <- plot_grid(NULL, nltp, NULL, nrow = 1, rel_widths = c(0.3,1,1.3))
-proteo_bottom <- plot_grid(NULL, parp, nrow = 1, rel_widths = c(0.5,1))
-proteo <- plot_grid(NULL, proteo_top, NULL, proteo_bottom, ncol = 1, rel_heights = c(0.1,1,0.1,1))
-
-proteo %>% ggsave("figures/proteo.png", .,  device = "png", height = 4, width = 5, units = "in")
-
-```
-
-
-
-
-#Splicing figures
-```{r splicing}
-
-helper <- function(elut_tidy, proteome, df_meta, exps, protein, rel_widths, figwidth, figheight, units, outfile_base){
-
-#elut_tidy <- elut_tidy_norm
-#proteome <- proteome
-#exps =  c("HEK_SEC1", "HEK_SEC2", "HEK_IEX1", "HEK_IEX2")
-#protein = "PUR2_HUMAN"
-
-    df_meta_sel <- df_meta %>% filter(ExperimentName %in% exps)
-    
-    df_fracorder <- df_meta_sel %>%
-                     select(ExperimentName, FractionID) %>% unique %>%
-                     group_by(ExperimentName) %>%
-                         mutate(FractionID_order = rank(FractionID)) %>% ungroup
-  
-
-    df_sel <- elut_tidy %>% filter(ExperimentName %in% exps) %>% 
-         filter(grepl(protein, ID)) 
-    
-    df_peps <- df_sel %>% 
-                    select(Peptide, ID) %>% 
-                    unique
-    
-    df_seq <- left_join(df_peps, proteome, by = "ID")
-
-    
-    df_cov <- cov_columns(df_seq)
-    
-    
-    df_complete <- df_sel %>% select(-ID) %>% complete_fxn(., df_meta_sel) 
-    
-    df_start_info <- df_cov %>% 
-        select(Peptide, start, length)
-
-
-    df_full <- left_join(df_complete, df_start_info, by = c("Peptide"))  %>%
-                  left_join(    df_fracorder, by = c("ExperimentName", "FractionID"))
-  
-    # As psuedocount to zeros that are before or after values,
-    # So than min_height remove lines of zeroes
-    df_full <- df_full %>% 
-                   arrange(ExperimentName, start) %>%
-                   group_by(Peptide, ExperimentName) %>%
-                      mutate(PeptideCount= case_when(PeptideCount == 0 & lag(PeptideCount > 0) ~ 0.01,
-                                              PeptideCount == 0 & lead(PeptideCount > 0) ~  0.01,
-                                              TRUE ~ PeptideCount
-                                              
-                                              )) %>% ungroup 
-
-
-    spark_plot <- pep_sparkline_fxn(df_full) + theme(axis.text.y = element_blank())
-    pepcov_plot <- pepcov_fxn(df_cov)
-    final <- plot_grid(pepcov_plot, spark_plot, align = "h", axis = "tb", rel_widths = rel_widths)
-
-    
-    
-    pdf_filename <- paste0(outfile_base, ".pdf")
-    png_filename <- paste0(outfile_base, ".png")
- 
-    print(png_filename)
-    
-    final %>% ggsave(png_filename, .,device = "png", width = figwidth, height = figheight,  units = units)
-    print(pdf_filename)
-    
-    final %>% ggsave(pdf_filename, ., device = "pdf", width = figwidth, height = figheight, units = units)
-    return(final)
-
-
-}
-
-
-nasp <-  helper(elut_tidy_norm, proteome, df_meta,  c("HEK_SEC1", "HEK_SEC2"), "NASP_HUMAN", rel_widths = c(1,2), figwidth = 3, figheight = 2.5, units = "in", outfile_base = "images/plot_NASP")
-
-
-gart <- helper(elut_tidy_norm, proteome,  df_meta, c("HEK_SEC1", "HEK_SEC2", "HEK_IEX1", "HEK_IEX2"), "PUR2_HUMAN", rel_widths = c(1,4), figwidth = 6, figheight = 3, units = "in", outfile_base = "images/plot_GART")
-
-nltp <- helper(elut_tidy_norm, proteome,  df_meta, c("HEK_SEC1", "HEK_SEC2", "HEK_IEX2"), "NLTP_HUMAN", rel_widths = c(1,2), figwidth = 6, figheight = 3, units = "in", outfile_base = "images/plot_NLTP_HUMAN")
-
-parp <- helper(elut_tidy_norm, proteome,  df_meta, c("HEK_IEX1", "HEK_IEX2"), "PARP1_HUMAN", rel_widths = c(1,2), figwidth = 5, figheight = 3, units = "in", outfile_base = "images/plot_PARP")
-
-
-pdli5 <- helper(elut_tidy_norm, proteome,  df_meta, c("HEK_IEX1", "HEK_IEX2"), "PDLI5_HUMAN", rel_widths = c(1,2), figwidth = 5, figheight = 3, units = "in", outfile_base = "images/plot_PDLI5")
-
-osr1 <- helper(elut_tidy_norm, proteome,  df_meta, c("HEK_SEC1", "HEK_SEC2", "HEMO_SEC2"), "OXSR1_HUMAN", rel_widths = c(1,4), figwidth = 3, figheight = 3, units = "in", outfile_base = "images/plot_OXSR1")
-
-ubp15 <- helper(elut_tidy_norm, proteome,  df_meta, c("HEK_SEC1", "HEK_SEC2", "HEMO_IEX1", "HEMO_IEX2"), "UBP15_HUMAN", rel_widths = c(1,4), figwidth = 6, figheight = 3, units = "in", outfile_base = "images/plot_UBP15")
-
-ank <- helper(elut_tidy_norm, proteome,  df_meta, c("HEMO_SEC1", "HEMO_SEC2", "HEMO_IEX1", "HEMO_IEX2"), "ANK1_HUMAN", rel_widths = c(1,2), figwidth = 6, figheight = 3, units = "in", outfile_base = "images/plot_ANK1")
-
-abcf <- helper(elut_tidy_norm, proteome,  df_meta, c("HEK_SEC1", "HEK_IEX1", "HEMO_IEX1", "HEMO_IEX2"), "ABCF1_HUMAN", rel_widths = c(1,2), figwidth = 4, figheight = 3, units = "in", outfile_base = "images/plot_ABCF1")
-
-TC159_ARATH = known proteolysis event
-
-```
-
-Assemble figures
-
-New discoveries
-```{r}
-top_newdisc <- plot_grid(NULL, pdli5, 
-          NULL, osr1, NULL, 
-          nrow = 1, 
-
-          rel_widths = c(0.2,1.2,0.5, 1.5,0.8))
-mid_newdisc <- plot_grid(NULL, ubp15, nrow = 1, rel_widths = c(0.1,1))
-
-bottom_newdisc <- plot_grid(NULL, abcf, nrow = 1, rel_widths = c(0.1,1))
-
-newdisc <- plot_grid(NULL, 
-                     top_newdisc, 
-                     NULL, 
-                     mid_newdisc,
-                     NULL, 
-                     bottom_newdisc,
-                     rel_heights = c(0.1, 0.8, 0.1,1, 0.1,1), 
-                     ncol = 1)
-
-newdisc %>% ggsave("figures/newdisc.png", .,  device = "png", height = 5, width = 6, units = "in")
-# Where is the "NA"
-
-abcf
-
-```
-
-Splices
-```{r}
-splicing_top <- plot_grid(NULL, nasp, NULL, nrow = 1, rel_widths = c(0.3,1,0.4))
-
-splicing_bottom <- plot_grid(NULL, gart, nrow = 1, rel_widths = c(0.3,1.4))
-
-splicing <- plot_grid(NULL, splicing_top,NULL, splicing_bottom, ncol = 1, rel_heights = c(0.1,1,0.1,1))
-
-splicing %>% ggsave("figures/splicing.png", .,  device = "png", height = 4, width = 5, units = "in")
-
-```
-
-Proteolysis
-#Space for one more proteolysis
-```{r}
-proteo_top <- plot_grid(NULL, nltp, NULL, nrow = 1, rel_widths = c(0.3,1,1.3))
-proteo_bottom <- plot_grid(NULL, parp, nrow = 1, rel_widths = c(0.5,1))
-proteo <- plot_grid(NULL, proteo_top, NULL, proteo_bottom, ncol = 1, rel_heights = c(0.1,1,0.1,1))
-
-proteo %>% ggsave("figures/proteo.png", .,  device = "png", height = 4, width = 5, units = "in")
-
-```
-
-
-
-
-
-More novel stuff
-```{r}
-#sp|Q9SI75|EFGC_ARATH','sp|O81283|TC159_ARATH','sp|Q9LSB4|NAI2_ARATH','sp|Q9SI75|EFGC_ARATH','sp|Q9XI36|MBD10_ARATH','sp|Q56YU0|AL2C4_ARATH','sp|Q38858|CALR2_ARATH','tr|F4ISU2|F4ISU2_ARATH','tr|F4J9K9|F4J9K9_ARATH','tr|F4KHD5|F4KHD5_ARATH')){   #'tr|Q8VZW6|Q8VZW6_ARATH'
-
-
-
-```
-
-
-```{r cars}
-osr1_gel_measures <- read_csv("figures/osr1_gel_measures.csv")
-osr1_fig <- ggplot(osr1_gel_measures, aes(x=Position, y=MW_GST, color = condition)) +
-    geom_point() +
-    #geom_line () + 
-
-    geom_smooth(method = "glm", formula = y~x,
-                      method.args = list(family = gaussian(link = 'log'))) +
-    #geom_vline(xintercept = 85, color="red") + 
-    #geom_vline(xintercept = 122, color="blue") +
-    geom_vline(xintercept = 132, color="grey") + 
-    geom_vline(xintercept =169, color="grey") +
-   # geom_point(x = 120.5, y = log10(45.5), size =3, color="red") +
-   # geom_point(x = 159, y = log10(35.4), size =3, color="blue") +
-    background_grid(major = "y", minor="y") +
-    #geom_text(label ="344-527", x = 120.5, y = log10(65), size =5, color="blue") +
-    #geom_text(label = "344-433", x = 159, y = log10(55), size =5, color="red") +
-    theme(legend.position = "none") +
-    ylab("MW") +
-        scale_y_log10() +
-    #geom_label(aes(label = ID)) +
-    xlim(0,250)+
-    scale_color_manual(values = palette)
-#+
-    #facet_wrap(~condition)
-
-ggplotly()
-
-ggsave("figures/osr1_plot.pdf",osr1_fig,  device= "pdf", units = "in", height = 2, width = 2)
-
-
-
-
-```
-
-
-```{r}
-parp_measures <- read_csv("figures/parp1_gel_measures.csv")
-parp_unknown <- parp_measures %>% filter(is.na(truemass))
-
-
-parp_fig <- ggplot(parp_measures, aes(x = position, y = truemass)) +
-    geom_smooth(method = "glm", formula = y~x,
-                      method.args = list(family = gaussian(link = 'log'))) +
-    geom_point() +
-    geom_vline(data = parp_unknown, aes(xintercept = position, color = bandnum)) +
-    geom_hline(yintercept = 55.3) + 
-    geom_hline(yintercept = 39.4) +
-    scale_y_continuous(breaks = c(10,20,30,40,50,60, 100)) +
-    facet_wrap(~experiment, ncol = 1)
-
-ggsave("figures/parp1_plot.pdf",parp_fig,  device= "pdf")
-
-
-
-```
-
-```{}
-library(stargazer)
-```
-
-
-```{r}
-#UBP15_FIG
-
-
-
-
-helper <- function(elut_tidy, proteome,  rel_widths = c(1,4), figwidth = 4, figheight = 3, units = "in", outfile_base = "figures/fig", exact = FALSE, protein = NULL, exps = NULL){
-  
-  if(!is.null(exps)){
-    
-    elut_tidy <- elut_tidy %>% 
-      filter(experiment_name %in% exps) %>%
-      mutate(experiment_name = fct_relevel(experiment_name, exps))
-  }
-  
-  if(!is.null(protein)){
-    if(exact==TRUE){
-      
-       elut_tidy <- elut_tidy %>% 
-         filter(ProteinID== protein)
-    }
-    else{
-       elut_tidy <- elut_tidy %>% 
-         filter(grepl(protein, ProteinID))
-    }
-   }
-  
-  
-  hm <- elut_tidy %>% 
-  ggplot(aes( x = FractionID, y = fct_rev(fct_reorder(Peptide, peporder)), fill = normpep)) +
-  geom_tile() +
-  scale_fill_continuous(low = "white", high = "black") +
-  scale_x_discrete(expand = c(0,0)) +
-  theme(legend.position = "none",
-        axis.text.x = element_blank(),
-        axis.title.y = element_blank(),
-        axis.title.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        axis.ticks.y = element_blank(),
-        panel.spacing = unit(0.2, "lines"),
-        plot.margin = unit(c(1,-10,1,0), "lines"),
-        strip.background = element_blank()) +
-  panel_border(colour = "black") + 
-  facet_wrap(~experiment_name, nrow = 1, scales = "free_x") 
- 
-
-df_peps <- elut_tidy %>% select(ProteinID, Peptide) %>% unique
-    
-
-
-    df_seq <- left_join(df_peps, proteome, by = c("ProteinID" = "ID"))
-    df_cov <- cov_columns(df_seq)
-
-    covplot <- pepcov_fxn(df_cov, pubtheme = TRUE)
-
-    
-     final <- covplot + hm + theme(axis.text.y = element_blank()) +  patchwork::plot_layout(widths = rel_widths)
-     
-     
-    pdf_filename <- paste0(outfile_base, ".pdf")
-    png_filename <- paste0(outfile_base, ".png")
- 
-
-    
-    final %>% ggsave(png_filename, .,device = "png", width = figwidth, height = figheight,  units = units)
-    print(png_filename)
-
-    
-    final %>% ggsave(pdf_filename, ., device = "pdf", width = figwidth, height = figheight, units = units)
-    print(pdf_filename)
-     
-    return(df_cov)
-}
-
-helper(elut_long, human_proteome,  rel_widths = c(1,4), figwidth = 3, figheight = 2, units = "in", outfile_base = "figures/fig_IF2B_HUMAN",  exact = FALSE, protein = "IF2B_HUMAN", exps = c( "HEK_IEX1", "HEKR_IEX1"))
-
-
-
-
-```
-
-
-Scratch
-
-Unused, there are a lot of exons
-```{r}
-
-
-
-
-bps_exon <- bps_manual %>%
-  filter(!is.na(loc)) %>%
-  left_join(human_meta, by = "Entry_name") %>%
-  left_join(exons, by = c("Entry" = "Accession")) %>%
-  #left_join(domains_pfam, by = "Entry") %>%
-  #mutate(in_domain = case_when((loc >= ProtBegin & loc <= ProtEnd) ~ TRUE,
-  #                              TRUE ~ FALSE)) %>% 
-  arrange(seqlen)
-  
-exon_plot <- bps_exon %>%
-  mutate(Entry_name = fct_inorder(Entry_name)) %>%
-  #filter(Entry_name == "UBP15_HUMAN") %>%
-  ggplot() + 
-    geom_rect(fill = "grey90", aes(xmin = 0, xmax = seqlen, ymin = 0, ymax = 1)) +
-  geom_vline(color = "cadetblue4", aes(xintercept = ProtEnd)) +
-  
-  #geom_point(shape=18, color = "red", aes(x = loc, y =0.5)) + 
-  
-  #geom_vline(color  = "black", xintercept = 0) +
-   # geom_vline(color = "black", aes(xintercept = seqlen)) + 
-  theme(panel.margin=unit(.05, "lines"),
-        strip.text.y = element_text(angle = 180),
-        strip.background =element_rect(fill = "white"),
-       axis.text.x = element_blank(), 
-        axis.ticks.x = element_blank(),
-       axis.text.y = element_blank(),
-       axis.ticks.y = element_blank(),
-       axis.line.x = element_blank(),
-       axis.line.y = element_blank(),
-       axis.title.x = element_blank(),
-       panel.border = element_rect(color = "black", fill = NA, size = 1)
-        ) +
-           facet_wrap(~Entry_name, strip.position = "left",ncol = 2) 
-exon_plot
-
-
-  
-```
-
-
-proteins to make figures of
-Not in use
-```{r}
-all_sel_orthogroups <-  bps_identified %>% ungroup()%>%
-  left_join(labels) %>%
-  filter(!is.na(label)) %>%
-  filter(abs_log2fc >=2) %>%
-  select(ProteinID) %>%
-  left_join(orthologies)
-
-
-identified_proteins <- all_sel_orthogroups %>% select(ProteinID) %>% unique()
-extra_ortholog_proteins <- orthologies %>% filter(ID %in% all_sel_orthogroups$ID) %>%
-  select(ProteinID) %>% unique()
-
-all_proteins_to_pick <-
-  bind_rows(identified_proteins, extra_ortholog_proteins) %>%
-  separate(ProteinID, into = c(NA, NA, "Entry_name"), sep = "[|]")
-
-chlre_proteins_to_pick <- all_proteins_to_pick %>% filter(grepl("CHLRE", Entry_name))
-human_proteins_to_pick <- all_proteins_to_pick %>% filter(grepl("HUMAN", Entry_name))
-arath_proteins_to_pick <- all_proteins_to_pick %>% filter(grepl("ARATH", Entry_name))
-
-
-chlre_proteins_to_pick %>% write_csv("data_files/chlre_proteins_to_pick.txt", col_names = FALSE)
-human_proteins_to_pick %>% write_csv("data_files/human_proteins_to_pick.txt", col_names = FALSE)
-arath_proteins_to_pick %>% write_csv("data_files/arath_proteins_to_pick.txt", col_names = FALSE)
-
-```
-
-
-### Currently not dealing with mod peptides
-### For highlight examples, check for mod peptides
-```{r}
-
-
-# Load noncanonical and phospho peptides, add string to Peptide so it will be plotted individually
-short_tidy_mod <- read_csv("msfragger/msfragger_cov.csv") %>%
-  mutate(Peptide = paste0(str_trunc(source, 2, ellipsis = ""), "_", Peptide)) %>%
-filter(experiment_name !="HEKR_SEC1") # Something up with that, too many identified
-
-
-short_tidy_both <- short_tidy_filt %>%
-  mutate(source = "unmodified") %>%
-  filter(status == "protein_unique") %>%
-  rename(totfracs = totfracts)# %>%
-  #bind_rows(short_tidy_mod) # Fix in peptide_identification
-
-tester <-short_tidy_both %>%
-  #filter(source == "semienzy") %>%
-  filter(grepl("WDR44_HUMAN", ProteinID)) 
-tester %>%
-  pep_point_fxn()
-
-tester_domains <- domaindis_setup %>%
-   filter(grepl("WDR44_HUMAN", Entry_name))
-
-tester_domains%>%
-   plot_domain_dis
-
-tester %>% 
-  pepcov_fxn()
-
-
-
-```
-
-#long_sel <- short_tidy_unique %>% 
-#     
-#         select(-filename, -seqlen, -status, -totfracs)#
-
-
-#short_sel <- short_tidy %>% 
-##                filter(ProteinID %in% labels$ProteinID) %>%
-#                filter(status == "protein_unique") %>%
-#     
-#         select(-filename, -seqlen, -status, -totfracts)
-
-
-#long_sel %>% write_csv("data_files/long_sel.csv")
-
-#long_sel <- read_csv("data_files/long_sel.csv")
-
-
-```{r}
-fragment_data_regex <- fragment_data_terminal %>%
-
-  select(ProteinID, Peptide, peakid, terminal_pep, term) %>% unique() %>%
-  group_by(ProteinID, peakid, terminal_pep, term) %>% 
-    filter(row_number() == 1) %>%  
-  ungroup %>% 
-  pivot_wider(names_from = terminal_pep, values_from = Peptide ) %>%
-  mutate(pepregex_start = toupper(str_replace_all(start, "[I|J|L]", "(I|J|L)"))) 
-
-```
-
-
-
-```{r}
-
-
-human_w_isoform_formatted <- human_w_isoform %>%
-  separate(ID, into = c("repo", "Entry_tmp", "Entry_name"), remove = FALSE, sep = "[|]") %>%
-  separate(Entry_tmp, into = c("Entry", "isoform_num"), sep = "-") %>%
-  mutate(ProteinID = paste(repo, Entry, Entry_name, sep="|")) %>%
-  select(-repo, -Entry, - Entry_name) %>%
-  mutate(Sequence = toupper(Sequence)) %>%
-  mutate(isoform_num = case_when(is.na(isoform_num ) ~ "1", 
-                                 TRUE ~ isoform_num)) %>%
-    mutate(isoform_length = str_length(Sequence)) 
-
-
-
-# Only want truncation isoforms, not isoforms that are missing something from the middle
-fl <- human_w_isoform_formatted %>% 
-  filter(isoform_num == 1) %>% 
-  # mutate(fl_n  = str_extract(Sequence, "^.{10}")) %>%
-  # mutate(fl_c  = str_extract(Sequence, ".{10}$")) %>%
-    mutate(fl_length= isoform_length ) %>%
-   select(ProteinID, fl_length, fl_sequence = Sequence) 
-
-
-human_w_isoform_no_internal <-   human_w_isoform_formatted %>%
-  left_join(fl, by = 'ProteinID') %>%
-  mutate(subseq= str_detect(fl_sequence, Sequence) ) %>%
-  filter(subseq == TRUE) %>%
-  select(-subseq)
-
-  
-shortest_isoform <-  fragment_data_regex  %>%
-  left_join(human_w_isoform_no_internal, by = "ProteinID") %>%
-    filter(isoform_length < 0.9 * fl_length | isoform_num == 1) %>%
-  filter(!is.na(ID)) %>%
-  rowwise() %>%
- mutate(detected_startpep = paste0(str_detect(Sequence, pepregex_start), collapse=",")) %>% 
-  filter(detected_startpep == TRUE) %>%
-    mutate(pepregex_end = toupper(str_replace_all(end, "[I|J|L]", "(I|J|L)"))) %>%
-   mutate(detected_endpep = paste0(str_detect(Sequence, pepregex_start), collapse=",")) %>% 
-  filter(detected_endpep == TRUE) %>%
-
-  arrange(isoform_length) %>%
-
-  group_by(ProteinID, peakid, term) %>%
-    filter(row_number() == 1) %>%
-  ungroup() 
-
-
-shortest_isoform %>%
-  select(peakid, ProteinID, isoform_num, isoform_length, ID, term) %>%
-  arrange(ProteinID, peakid,  isoform_num)  %>% View()
-
-
-```
-
-
-
-
-
-
-```{r breakpoint_domain_plot}
-
-
-peptide_positions <- short_sel_peaks %>%
-  select(Peptide, experiment_name, ProteinID, Start, End) %>%
-  unique()
-
-bps_loc <- scored_labeled %>%
-  left_join(peptide_positions, by = c("ProteinID", "experiment_name", "actual_terminal_peptide" = "Start")) %>% 
-  mutate(loc = case_when(terminal == "nterm" ~ End,
-                         terminal == "cterm" ~ actual_terminal_peptide)) %>%
-  separate(ProteinID, into = c(NA, "Entry", NA), sep = "[|]", remove = FALSE) %>% 
-  filter(max_abs_log2fc >= 3)
-  
-
-
-#elut_wide_sel_cov_locannot <- read_csv("data_files/selected_wide_peptide_elution_locannot.csv") %>%
-#  select(Entry_name, estimated_loc, first_last_obs, direction, start, end)
-
-#bps_manual <- elut_wide_sel_cov_locannot  %>%
-#  filter(!is.na(first_last_obs)) %>%
-#  mutate(loc = case_when(direction == "N" ~ end,
-#                        direction == "C" ~ start))
-
-# Need to get first or last position of each bp
-```
-unused?
-```{r}
-
-bps_pfam_dis <- bps_loc %>%
-  filter(!is.na(loc)) %>%
-  left_join(meta, by = "Entry") %>%
-  left_join(domains_pfam, by = "Entry") %>%
-  mutate(in_domain = case_when((loc >= ProtBegin & loc <= ProtEnd) ~ TRUE,
-                                TRUE ~ FALSE)) %>% 
-  arrange(seqlen) %>%
-  left_join(domains_dis, by = "Entry", suffix = c("_domain", "_disordered"))
-
-
-pfam_dis_plot <- bps_pfam_dis %>%
-  
-  mutate(Entry_name = fct_inorder(Entry_name)) %>%
-  #filter(Entry_name == "UBP15_HUMAN") %>%
-  ggplot() + 
-    geom_rect(fill = "grey90", aes(xmin = 0, xmax = seqlen, ymin = 0, ymax = 1)) +
-  geom_rect(fill = "cadetblue3", aes(xmin = ProtBegin_domain, xmax = ProtEnd_domain, ymin = 0, ymax = 1)) +
-   geom_rect(fill = "goldenrod2", aes(xmin = ProtBegin_disordered, xmax = ProtEnd_disordered, ymin = 0, ymax = 1)) +
-   
-  geom_point(color = "black", size = 3, aes(x = loc, y =0.5, shape = direction)) +
-  scale_shape_manual(values = c(62,60)) +
-  #geom_point(shape=18, color = "red", aes(x = loc, y =0.5)) + 
-  #geom_vline(color  = "black", xintercept = 0) +
-   # geom_vline(color = "black", aes(xintercept = seqlen)) + 
-  theme(panel.margin=unit(.05, "lines"),
-        strip.text.y = element_text(angle = 180),
-        strip.background =element_rect(fill = "white"),
-       axis.text.x = element_blank(), 
-        axis.ticks.x = element_blank(),
-       axis.text.y = element_blank(),
-       axis.ticks.y = element_blank(),
-       axis.line.x = element_blank(),
-       axis.line.y = element_blank(),
-       axis.title.x = element_blank(),
-       panel.border = element_rect(color = "black", fill = NA, size = 1)
-        ) +
-           facet_wrap(~Entry_name, strip.position = "left",ncol = 2) 
-dis_plot
-
-
-
-bps_pfam_dis %>% 
-  rowwise() %>%
-  mutate_at(vars(starts_with("Prot"), "loc"), ~ . / seqlen) %>% ungroup %>%
-  arrange(loc) %>%
- mutate(Entry_name = fct_inorder(Entry_name)) %>%
-  #filter(Entry_name == "UBP15_HUMAN") %>%
-  ggplot() + 
-    geom_rect(fill = "grey90", xmax = 1, aes(xmin = 0, ymin = 0, ymax = 1)) +
-  geom_rect(fill = "cadetblue3", aes(xmin = ProtBegin_domain, xmax = ProtEnd_domain, ymin = 0, ymax = 1)) +
-   geom_rect(fill = "goldenrod2", aes(xmin = ProtBegin_disordered, xmax = ProtEnd_disordered, ymin = 0, ymax = 1)) +
-   
-  geom_point(color = "black", size = 3, aes(x = loc, y =0.5, shape = direction)) +
-  scale_shape_manual(values = c(62,60)) +
-  #geom_point(shape=18, color = "red", aes(x = loc, y =0.5)) + 
-  #geom_vline(color  = "black", xintercept = 0) +
-   # geom_vline(color = "black", aes(xintercept = seqlen)) + 
-  theme(panel.margin=unit(.05, "lines"),
-        strip.text.y = element_text(angle = 180),
-        strip.background =element_rect(fill = "white"),
-       axis.text.x = element_blank(), 
-        axis.ticks.x = element_blank(),
-       axis.text.y = element_blank(),
-       axis.ticks.y = element_blank(),
-       axis.line.x = element_blank(),
-       axis.line.y = element_blank(),
-       axis.title.x = element_blank(),
-       axis.title.y = element_blank(),
-       panel.border = element_rect(color = "black", fill = NA, size = 1)
-        ) +
-  
-           facet_wrap(~Entry_name, strip.position = "left",ncol = 2) 
-dis_plot
-
-```
-
-
-
-```{r}
-#TOPFIND
-#https://topfind.clip.msl.ubc.ca/
-  
-#acs <- read_csv("outside_data/output/acs.csv") %>%
-#  rename(Entry = name)
-
-cleavages <- read_csv("outside_data/output/cleavages.csv")  %>%
-  separate(idstring, into = c(NA,"Entry"), sep = "-") %>%
-  mutate(Entry = str_replace(Entry, "^..", "")) %>%
-  separate(Entry, into = c("Entry",NA), sep = "[)]")
-
-cleavagesites <- read_csv("outside_data/output/cleavagesites.csv") 
-
-# N terminal position would go with my c term fragments
-nterms <- read_csv("outside_data/output/nterms.csv") %>% mutate(whichend = "nterm") %>%
-  mutate(terminal= "cterm")
-
-# C terminal position would go with my N term fragments
-cterms <- read_csv("outside_data/output/cterms.csv")%>% mutate(whichend = "cterm") %>%
-  mutate(terminal= "nterm")
-
-positives_split <- positives %>%
-  separate(ProteinID, into = c(NA, "Entry", NA), sep = "[|]", remove = FALSE)
-
-bothterms <- bind_rows(nterms, cterms) %>%
-  select(-id) %>%
-  rename(breakpoint = pos) %>%
-  select(protein_id, breakpoint, whichend,  idstring, terminusmodification_id, terminal) %>%
-  separate(idstring, into = c("Entry", NA, "modtype"), sep = "-")
-
-bothterms %>%
-  full_join(positives_split, by = "Entry") %>%
-  filter(!is.na(ProteinID)) %>%
-  View()
-
-
-topfind_peaks <- bps_identified %>%
-  separate(ProteinID, into = c(NA, "Entry", NA), sep = "[|]", remove = FALSE) %>%       inner_join(bothterms, by = c("Entry", "terminal")) %>%
-  filter(!is.na(ProteinID)) 
-
-topfind_peaks %>% filter(
-  log2fc > 2.5
-) %>% 
-  ggplot(aes(actual_terminal_peptide, breakpoint)) +
-  geom_point(alpha = 0.4) +
-  geom_abline(slope =1, intercept = 0) +
-  facet_wrap(~terminal)
-
-bps_identified_entry <- bps_identified %>%
-  separate(ProteinID, into = c(NA, "Entry", NA), sep = "[|]", remove = FALSE) 
-
-topfind_cleavages <- bps_identified_entry %>%
-  inner_join(cleavages, by = "Entry") %>% 
-  filter(log2fc > 2)  
-
-topfind_cleavages %>% View()
-
-```
-
-
-Prevelance estimate
-
-```{r}
-human_w_isoform <- read_fasta("annotation_files/uniprot_human_reviewed_isoforms.fasta")
-
-human_w_isoform_form <- human_w_isoform %>%
-  mutate(seqlen = str_length(Sequence)) %>%
-  select(-Sequence) %>%
- 
-  separate(ID, into = c("ID", NA), sep = "-") %>%
-  group_by(ID) %>%
-     summarize(maxlen = max(seqlen), minlen = min(seqlen), diff = minlen/maxlen
-               ) %>% ungroup %>% 
-  left_join(positives, by = c("ID" = "ProteinID")) %>%
-   separate(ID, into = c(NA, 'Entry', NA), sep = "[|]", remove = FALSE) 
-  
-prot_peptides <- short_tidy %>% 
-  separate(ProteinID, into = c(NA, "Entry", NA), sep = "[|]") %>%
-  filter(spec == "human") %>%
-  select(Entry,Peptide) %>% 
-  unique %>%
-     group_by(Entry) %>%
-     summarize(prot_peptides = n()) %>% 
-  ungroup()
-
-
-human_w_isoform_form %>%
-  left_join(prot_peptides, by = 'Entry')  %>%
-    filter(prot_peptides > 10) %>%
-   mutate(bins = round(diff, 1)) %>%
-    mutate(status = case_when(is.na(label) ~ "No proteoforms detected",
-                            !is.na(label) ~ "Proteoforms detected")) %>%
-            group_by(bins, status) %>% 
-   tally() %>% ungroup %>%
-  mutate(n = case_when(status == "No proteoforms detected" ~ -n,
-                       status == "Proteoforms detected" ~ n)) %>%
-
-  ggplot(aes(x = bins, y = n, group = status, fill = status)) +
-  geom_bar(stat = "identity") +
-  #geom_hex() +
-  #scale_fill_log10() + 
-  coord_flip() + 
-    xlab("Shortest isoform /\nlongest isoform length") + 
-  ylab("Number of proteins") +
-  theme(legend.position = "none")  + 
-  facet_wrap(~status, nrow = 1, scales = "free_x")
-
-prevalance_plot <- human_w_isoform_form %>%
-  left_join(prot_peptides, by = 'Entry')  %>%
-    filter(prot_peptides > 8) %>% 
-  mutate(status = case_when(is.na(label) ~ "No proteoforms detected",
-                            !is.na() ~ "Proteoforms detected")) %>%
-
-  ggplot(aes(x = diff)) +
-  geom_histogram(binwidth = 0.1) +
-  #geom_point(alpha = 0.05) +
-  #geom_hex() +
-  #scale_fill_log10() + 
-    theme(strip.background = element_blank()) +
-  xlab("Shortest isoform /\nlongest isoform length") + 
-  ylab("Number of proteins") +
-  scale_y_log10() + 
-  facet_wrap(~status, ncol = 1, scales = "free_y")
-
-
-prevalance_plot %>% ggsave("figures/prevalance_plot.png", .,device = "png", width = 2, height = 2,  units = "in")
-
-prevalance_plot %>% ggsave("figures/prevalance_plot.pdf", ., device = "pdf", width = 2, height = 2, units = "in")
-
-```
-
-
-
-Looking for candidate fragment interactions
-```{r}
-
-PUR2_HUMAN
-
-#BOTH 
-#CDC73 N term IEX, SEC
-#ACINU_HUMAN IEX, SEC 
-#EDC3_HUMAN IEX1,2
-#DDX46 IEX1,2
-#DDX21, IEX, SEC N term
-#PDXD1 SEC1,2
-#PUR2_HUMAN, strong fragment Do this one
-# DHB4, both, strong, do this one
-#PAIRB both, strong Do this one (also RGGA_ARATH)
-#RU2A
-#SRRM2 many, Do this one
-#DNJC2_HUMAN (SEC, IEX)
-#NOA1 N-terminus
-#UBP15, both
-```
-
-```{r}
-quick_plot_elution("UBP15_HUMAN", long_sel)
-
-
-#24,26 HEKR_IEX1
-#35,37 HEKR_SEC2
-#35,37, HEK_SEC2
-#30,34, HEMO_SEC2
-
-ubp1 <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEKR_IEX1",24, 26)
-ubp2 <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEKR_SEC2", 35, 37)
-ubp3 <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEK_SEC2", 35, 37) 
-ubp4 <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEMO_SEC2", 31, 34)
-
-ubp1 %>%inner_join(ubp4, by = "ProteinID") %>%
-  ggplot(aes(x = prop_obs_peps_in_sel.x, y = prop_obs_peps_in_sel.y, size= tot_obs_peps.y
-             , label = ProteinID)) +
-  geom_point(alpha = 0.2)
-#follow up on NQO2
-
-```
-
-
-```{r}
-quick_plot_elution("SRRM2_HUMAN", long_sel)
-
-
-#HEK_IEX2, 25,29
-#HEKR_IEX2 24,28
-#HEK_IEX1 18,26
-
-srrm1 <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEK_IEX2",25, 29)
-srrm2 <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEKR_IEX2", 25, 28)
-srrm3 <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEK_IEX1", 18, 26)
-srrm4 <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEK_SEC1", 38, 47)
-
-#srrm4 <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEMO_SEC2", 31, 34)
-
-srrm1 %>%inner_join(srrm2, by = "ProteinID") %>%
-  inner_join(srrm3, by = "ProteinID") %>%
-  inner_join(srrm4, by = "ProteinID") %>%
-  ggplot(aes(x = prop_obs_peps_in_sel.x, y = prop_obs_peps_in_sel.y.y, size= tot_obs_peps.y , label = ProteinID)) +
-  geom_point(alpha = 0.2)
-ggplotly()
-#follow up on NQO2
-
-srrm1 %>%inner_join(srrm2, by = "ProteinID") %>%
-  inner_join(srrm3, by = "ProteinID") %>%
-  inner_join(srrm4, by = "ProteinID") %>%
-  arrange(desc(prop_obs_peps_in_sel.x), desc(coverage_in_sel.x)) %>% View()
-
-srrm1 %>%inner_join(srrm2, by = "ProteinID") %>%
-  inner_join(srrm3, by = "ProteinID") %>%
-  inner_join(srrm4, by = "ProteinID") %>%
- mutate(max = coverage_in_sel.x * coverage_in_sel.y * coverage_in_sel.x.x * coverage_in_sel.y.y*prop_obs_peps_in_sel.x * prop_obs_peps_in_sel.y* prop_obs_peps_in_sel.x.x* prop_obs_peps_in_sel.y.y) %>%
-  arrange(desc(max)) %>% View()
-
-```
-
-
-
-```{r}
-quick_plot_elution("PUR2_HUMAN", long_sel)
-
-#HEK_IEX1 17,23
-#HEK_IEX2 24,29
-#HEKR_SEC1 42,44
-#HEKR_SEC2 35,37
-
-
-pur1 <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEK_IEX1", 17, 23)
-pur2 <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEK_IEX2", 24, 29)
-pur3 <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEKR_SEC1", 32, 34)
-pur4 <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEKR_SEC2", 35, 37)
-
-
-pur3 %>%inner_join(pur1, by = "ProteinID") %>%
-  ggplot(aes(x = prop_obs_peps_in_sel.x, y = prop_obs_peps_in_sel.y, size= tot_obs_peps.x, label = ProteinID)) +
-  geom_point(alpha = 0.2)
-
-pur1 %>%inner_join(pur3, by = "ProteinID") %>% 
-  inner_join(pur2, by = "ProteinID") %>% 
-  inner_join(pur4, by = "ProteinID") %>%
-  arrange(desc(prop_obs_peps_in_sel.x * prop_obs_peps_in_sel.y)) %>% View()
-
-```
-
-Q15031 P51659 
-
-```{r}
-# Both DHB4 and SYLM (LARS2) only two of several genes that cause Rennault Syndrome, but not exact match
-quick_plot_elution("DHB4_HUMAN", filter(long_sel, experiment_name == "HEK_IEX1"))
-
-# Protein fragment interaction example.
-# ACSF3 is the first stepin mito FAS
-# DHB4 causes a mitochondrial disease, but is canoniclly pexosisomal (peroxisome targ at the end)
-# Get this file  ftp://www.broadinstitute.org/distribution/metabolic/papers/Pagliarini/MitoCarta2.0/Mouse.MSMS.peptides.xlsx to see if the peptides found in mito are n-terminal only
-# https://bmcmedgenet.biomedcentral.com/articles/10.1186/1471-2350-15-30
-quick_plot_elution("DHB4_HUMAN", filter(long_sel, experiment_name == "HEK_SEC1"))
-
-
-quick_plot_elution("DHB4_HUMAN", filter(long_sel, experiment_name %in% c("HEK_IEX1", "HEK_SEC1", "HEKR_SEC1", "HEKR_IEX2")))
-
-quick_plot_elution("ACSF3_HUMAN", filter(long_sel, experiment_name %in% c("HEK_IEX1", "HEK_SEC1", "HEKR_SEC1", "HEKR_IEX2")))
-# 25,28 HEK_IEX1
-# 25,28 HEK_IEX1
-# 34,38 HEK_SEC1 (no FL)
-# 33,39, HEKR_SEC1 (has FL)
-# 27,30 HEKR_IEX2
-dhb1 <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEK_IEX1", 28, 29)
-dhb2 <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEK_SEC1", 34, 38)
-dhb3 <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEKR_SEC1", 33, 39)
-dhb4 <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEKR_IEX2", 30, 31)
-
-
-dhb1 %>%inner_join(dhb2, by = "ProteinID") %>%
-  ggplot(aes(x = prop_obs_peps_in_sel.x, y = prop_obs_peps_in_sel.y, size= tot_obs_peps.x, label = ProteinID)) +
-  geom_point(alpha = 0.2)
-dhb1 %>%inner_join(dhb2, by = "ProteinID") %>% 
-  inner_join(dhb3, by = "ProteinID") %>% 
-  inner_join(dhb4, by = "ProteinID") %>%
-  arrange(desc(prop_obs_peps_in_sel.x * prop_obs_peps_in_sel.y)) %>% View()
-  select(ProteinID)
-```
-
-```{r}
-# No good leads
-# CDC73
-quick_plot_elution("CDC73", long_sel)
-#HEK_IEX1 24,25 or 29,30 , FL 51,60 
-#HEKR_IEX1 24,26 or 30,31 , FL 48,59
-
-cdc73a <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEK_IEX1", 24, 25)
-cdc73b <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEKR_IEX1", 24, 26)
-ab <- inner_join(a,b, by=c( "ProteinID")) %>%
-          select(ProteinID, tot_obs_peps.x, tot_obs_peps.y, coverage_in_sel.x, coverage_in_sel.y, prop_obs_peps_in_sel.x, prop_obs_peps_in_sel.y)
-
-ggplot(ab, aes(x = prop_obs_peps_in_sel.x, y = prop_obs_peps_in_sel.y, size= tot_obs_peps.x, label = ProteinID)) +
-  geom_point(alpha = 0.2)
-ggplotly()
-
-e <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEK_IEX1", 51, 60)
-f <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEKR_IEX1", 48, 59)
-
-
-
-c <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEK_IEX1", 29, 30)
-d <- get_candidate_fragment_interactors(long_sel, n_obs_peps_per_exp, "HEKR_IEX1", 30, 31)
-cd <- inner_join(c,d, by=c( "ProteinID")) %>%
-          select(ProteinID, tot_obs_peps.x, tot_obs_peps.y, coverage_in_sel.x, coverage_in_sel.y, prop_obs_peps_in_sel.x, prop_obs_peps_in_sel.y)
-
-ggplot(cd, aes(x = prop_obs_peps_in_sel.x, y = prop_obs_peps_in_sel.y, size= tot_obs_peps.x, label = ProteinID)) +
-  geom_point(alpha = 0.2)
-ggplotly()
-
-
-inner_join(a,e, by= "ProteinID", "experiment_name") %>%
-          select(ProteinID, coverage_in_sel.x, coverage_in_sel.y, prop_obs_peps_in_sel.x, prop_obs_peps_in_sel.y)
- 
-
-
-
-
-
-```
-
-
-
-Get candidate fragment interactors from coverage
-```{r}
-
-get_candidate_fragment_interactors <- function(long_sel, n_obs_peps_per_exp, exp_name, startfrac, endfrac){
-  
-  candidates <- long_sel %>%
-     filter(experiment_name == {{ exp_name }}) %>%
-     group_by(ProteinID, experiment_name) %>%
-         mutate(tot_obs_peps = n()) %>%
-     ungroup() %>%
-    
-     filter(FractionID >= startfrac) %>%
-     filter(FractionID <= endfrac) %>%
-     group_by(ProteinID, experiment_name, tot_obs_peps) %>%
-         summarize(n_obs_peps_in_sel = n()) %>%
-     ungroup() %>%
-     inner_join(n_obs_peps_per_exp, by = c("ProteinID", "experiment_name")) %>%
-     mutate(tot_pos_peps_in_sel = n_obs_peps_per_exp * ((1 + endfrac) - startfrac )  ) %>%
-     mutate(coverage_in_sel = n_obs_peps_in_sel/ tot_pos_peps_in_sel) %>%
-     mutate(prop_obs_peps_in_sel = n_obs_peps_in_sel/ tot_obs_peps) %>%
-    
-    arrange(desc(coverage_in_sel))
-  
-  return(candidates)
-  
-}
-
-
-n_obs_peps_per_exp <- long_sel %>%
-  select(ProteinID, Peptide, experiment_name) %>%
-  unique() %>%
-  group_by(ProteinID, experiment_name) %>%
-     summarize(n_obs_peps_per_exp = n()) %>%
-  ungroup() %>%
-  filter(n_obs_peps_per_exp > 5)
-```
-
-Get terminal peptide for Chlamy candidates
-```{r}
-
-
-# EIF2B
-quick_plot_elution("A0A2K3D4U8", long_sel)
-long_sel %>% filter(grepl("A0A2K3D4U8", ProteinID)) %>%
-  filter(Start == 37) %>%
-  select(Peptide, Start, End)
-
-#End 
-
-quick_plot_elution("A0A2K3DGK5", long_sel)
-long_sel %>% filter(grepl("A0A2K3DGK5", ProteinID)) %>%
-  filter(Start == 296) %>%
-  select(Peptide, Start, End)
-
-quick_plot_elution("A8HWZ6", long_sel)
-long_sel %>% filter(grepl("A8HWZ6", ProteinID)) %>%
-  filter(Start == 138) %>%
-  select(Peptide, Start, End)
-A8HWZ6
-
-
-#EIF4AI
-# N terminal cleaved off by Foot and mouth disease 
-# https://pubmed.ncbi.nlm.nih.gov/11682048/
-# Viral proteases highjack proteolysis regulated control points.
-
-
-quick_plot_elution("IF4A1_HUMAN", long_sel)
-
-```
-
-In use
-```{r}
-
-# Just do obs, not obs
-
-
-# TODO? Add new filter to remove peaks that have fewer than 3 unique peptides
-
-#Get proteins that have at least 10 unique peptides
-numpeps <- short_tidy_unique_peaks %>%
-    select(ProteinID, Peptide) %>% unique %>%
-    group_by(ProteinID) %>%
-       summarize(numpeps = n()) %>% ungroup 
-
-
-
-min_peptides_plot <- numpeps %>%
-  inner_join(labels ) %>% 
-  filter(label == "pos") %>%
-  mutate(label = "Selected positives") %>%
-   ggplot(aes(x = numpeps)) +
-  geom_histogram(binwidth = 0.1) + 
-  facet_wrap(~label, ncol = 1) +
-  scale_x_log10(limits = c(1,500)) +
-  xlab("Number of observed unique peptides")
-
-
-min_peptides_plot %>%
-  ggsave("figures/min_peptides_plot.png", ., width = 4, height = 3)
-
-min_peptides_plot %>%
-  ggsave("figures/min_peptides_plot.pdf", ., width = 4, height = 3)
-
-# Show distribution of positive vs. neg
-numpeps %>%
-  inner_join(labels ) %>% 
-   ggplot(aes(x = numpeps)) +
-  geom_histogram(binwidth = 0.1) + 
-  facet_wrap(~label, ncol = 1) +
-  scale_x_log10()
-
-
-
-numpeps %>%
-  filter(numpeps >= 10) %>%
-  full_join(labels ) %>% 
-  mutate(new_label = case_when(label == "pos" ~ "Proteins with observed fragments", TRUE ~ "Other proteins")) %>%
-  mutate(new_label = fct_rev(new_label)) %>%
-   ggplot(aes(x = numpeps)) +
-  geom_histogram(binwidth = 0.1) + 
-  facet_wrap(~new_label, ncol = 1, scales = "free_y") +
-  scale_x_log10() +
-  xlab("Number of observed unique peptides") +
-  ylab("Number of proteins")
-
-# Shortest pos labeled one has 9 peptides, A0A2K3DJN8_CHLRE
-# BTW it's missing an N-terminal disordered domain
-
-
-```
-
-
-### From classified fragments, get their domain coverage (and the inverse lost domains)
-Get domains
-```{r}
-
-
-# Make inverse of each fragment. Look up domains in inverse! 
-  
-fragment_properties <- fragment_data %>%
-  group_by(ProteinID, peakid, term, candidate) %>%
-     summarize(n_unique_peps = length(unique(Peptide)), n_peptides = sum(pepcount, na.rm = TRUE), Start_obs = min(Start, na.rm = TRUE), End_obs = max(End, na.rm = TRUE)) %>%
-  ungroup %>%
-  separate(ProteinID, into = c(NA, 'Entry', 'Entry_name'), sep = "[|]", remove = FALSE) %>%
-  left_join(meta) %>%
-  mutate(Start_true = case_when(term == "nterm" | term == "full" ~ 1,
-                                TRUE ~ Start_obs)) %>%
-  mutate(End_true = case_when(term == "cterm" | term == "full" ~ as.integer(seqlen),
-                                TRUE ~ as.integer(End_obs))) %>%
-  mutate(missing_nterm_Start = case_when(term %in% c("cterm", "internal") ~ 1)) %>%
-    mutate(missing_nterm_End = case_when(term %in% c("cterm", "internal") ~ Start_true - 1)) %>%
-  mutate(missing_cterm_Start = case_when(term %in% c("nterm", "internal") ~ End_true +1)) %>%
-  mutate(missing_cterm_End = case_when(term %in% c("nterm", "internal") ~ seqlen)) 
-# Because of "internal" fragment, need to calculate these indendently
-
-
-# Paste together and unstack
-fragment_properties_long <- fragment_properties %>%
-  mutate(fragmentid = paste(term, peakid, candidate, Start_true, End_true, sep= "-")) %>%
-  mutate(Coverage_obs = paste0(Start_true, "-", End_true)) %>%
-  mutate(Coverage_missingnterm= paste0(missing_nterm_Start, "-", missing_nterm_End)) %>%
-   mutate(Coverage_missingcterm= paste0(missing_cterm_Start, "-", missing_cterm_End))  %>% 
-  select(-Start_true, -End_true, -missing_nterm_Start, -missing_nterm_End, -missing_cterm_Start,-missing_cterm_End, -Start_obs, -End_obs) %>%
-  pivot_longer(names_to = "Coverage_type", values_to = "Coverage", cols = starts_with("Coverage")) %>%
-  filter(Coverage != "NA-NA") %>%
-  separate(Coverage, into = c("Start", "End"), sep = "-") %>%
-  mutate(Start = as.integer(Start), End = as.integer(End))
-```
-
-
-### Annotate fragments with domains
-
-If a fragment has no domain, give it a NA_NA_nodomain
-
-```{r}
-
-
-fragment_domains <- fragment_properties_long %>% 
-  left_join(domaindis_annot) %>%
-  rowwise() %>% 
-  filter(ProtBegin %in% seq(Start, End)) %>%
-  filter(ProtEnd %in% seq(Start, End)) %>% 
-  select(-ProtBegin, -ProtEnd ) %>%
-  bind_rows(fragment_properties_long) %>%
-  group_by(Entry, fragmentid, Coverage_type) %>%
-     mutate(n = n()) %>%
-  ungroup %>%
-  mutate(domain_id = case_when(is.na(domain_id) & n == 1 ~ "NA_NA_nodomain",
-                               TRUE ~ domain_id)) %>%
-    mutate(Annotation = case_when(is.na(Annotation) & n == 1 ~ "nodomain",
-                               TRUE ~ Annotation)) %>%
-  filter(!is.na(domain_id))
-
-
-```
-
-```{r}
-fragment_domains %>%
-  filter(term != "full") %>% 
-
-  select(ProteinID, Annotation, Coverage_type, Entry_name) %>%
-  unique() %>%
-  group_by(Annotation, Coverage_type) %>%
-    summarize(n = n(), entries = paste0(Entry_name, collapse = ", ")) %>%
-  ungroup %>%
-  arrange(Annotation, desc(n)) %>% View()
-
-
-
-```
-
-
-```{r}
-term_pep_w_topsite <- terminal_peps %>%
-  
-  separate(ProteinID, into = c(NA, "Entry", NA), sep = "[|]", remove = FALSE) %>%
-  left_join(protein_lengths) %>%
-
-  mutate(breakpoint = case_when(
-               terminal_peptide == "nterm" ~ Start,
-              terminal_peptide == "cterm" ~ End
-  )) %>%
-    left_join(bothterms, by = c("Entry"), suffix = c("_peps", "_topsite")) %>%
-  filter(!is.na(breakpoint_topsite)) %>%
-  left_join(protein_lengths) %>%
-  filter(!is.na(seqlen)) %>%
-     mutate(frac_breakpoint_topsite = breakpoint_topsite/ seqlen) %>%
-     mutate(frac_breakpoint_peps = breakpoint_peps/ seqlen) %>%
-  mutate(diff = abs(frac_breakpoint_topsite -frac_breakpoint_peps)) %>%
-  filter(smallerfragment == TRUE) 
-  
-
-term_pep_w_topsite %>%
-    ggplot(aes(x = frac_breakpoint_topsite, y = frac_breakpoint_peps, color = diff)) +
-    geom_point(alpha = 0.05) + 
-  #geom_hex() + 
-   geom_abline(slope =1, intercept= 0) +
-  facet_wrap(~terminal_peptide + whichend) +
-  scale_color_viridis(direction = -1)
-
-term_pep_w_topsite %>% filter(diff < 0.2) %>%
-  filter(frac_breakpoint_topsite > 0.2) %>%
-filter(frac_breakpoint_peps> 0.2) %>%
-  arrange(loglik) %>% 
-  filter(frac_breakpoint_topsite <= frac_breakpoint_peps) %>% # on for nterm %>% View()
-  filter(terminal_peptide == "nterm") %>%
-   View()
-
-terminal_peps %>%
-  pivot_longer(cols = c(Start, End), names_to = "position", values_to = "pos") %>%
-  #filter((terminus == "nterm" & terminal_peptide == "cterm") |
-  #         (terminus == "cterm" & terminal_peptide == "nterm")) %>%
-  
-  separate(ProteinID, into = c(NA, "Entry", NA), sep = "[|]", remove = FALSE)%>%
-  left_join(bothterms, by = c("Entry"), suffix = c("_peps", "_topsite")) %>%
-  filter(!is.na(pos_topsite)) %>%
-  
-  
-  arrange(ProteinID, experiment_name) %>%
-  #View()
-  #filter(grepl("TCPH_HUMAN", ProteinID)) %>% 
-  ggplot(aes(x = pos_peps, y = pos_topsite, color = smallerfragment)) +
-    geom_point(alpha = 0.5) + 
-   geom_abline(slope =1, intercept= 0) +
-   facet_wrap(~terminal_peptide + whichend)
-#Something wrong
-
-bothterms %>%
-  group_by(Entry)  %>%
-    summarize(nmods = n()) %>%
-  ggplot(aes(x = nmods)) +
-    geom_histogram(binwidth = 1) +
-  scale_y_log10()
-
-
-
-# Try out just Nterm
-
-n_top <- bothterms %>% filter(whichend == "nterm")
-n_peps <- terminal_peps %>% filter(terminal_peptide == "nterm" ) 
-
-bothterms %>%
-  ggplot(aes(x = pos)) +
-  geom_histogram(binwidth = 10) +
-  xlim(0,1000) +
-  facet_wrap(~whichend)
-
-
-```
-
-
-
-```{r}
-helper2 <- function(elut_tidy, proteome, protein = NULL, exact = FALSE, exps = NULL, rel_widths = c(1,4), figwidth = 4, figheight = 3, units = "in", outfile_base = "figures/fig", axis_tick_spacing = 400, unique = TRUE){
-  
-  if(!is.null(exps)){
-    
-    elut_tidy <- elut_tidy %>% 
-      filter(experiment_name %in% exps) %>%
-      mutate(experiment_name = fct_relevel(experiment_name, exps))
-  }
-  
-  if(!is.null(protein)){
-    if(exact==TRUE){
-      
-       elut_tidy <- elut_tidy %>% 
-         filter(ProteinID== protein)
-    }
-    else{
-       elut_tidy <- elut_tidy %>% 
-         filter(grepl(protein, ProteinID))
-    }
-  }
-  
- 
-    if(unique==TRUE){
-      
-       elut_tidy <- elut_tidy %>% 
-         filter(status== "protein_unique")
-    }
-   print(elut_tidy)
-   elut_tidy <- elut_tidy %>%
-      filter(!is.na(pepcount)) %>%
-      group_by(ProteinID, Peptide, experiment_name) %>%
-          mutate(normpep = as.numeric(pepcount)/max(as.numeric(pepcount), na.rm = TRUE)) %>%
-     ungroup()
-  print(elut_tidy)
-  
-  
-   df_peps <- elut_tidy %>% select(ProteinID, Peptide) %>% unique
-    df_seq <- left_join(df_peps, proteome, by = c("ProteinID" = "ID"))
-    df_cov <- cov_columns(df_seq)
-
-    
-   df_form <- df_cov %>%
-     select(-ProteinID, -Sequence) %>%
-     select(Peptide, start, end) %>%
-     mutate(rounddown = plyr::round_any(start,100, floor)) %>%
-     arrange(start, end) %>%
-     group_by(rounddown) %>%
-         mutate(label = case_when(row_number() == 1 ~ paste0(rounddown, "-")
-                                  )) %>%
-     ungroup() %>%
-     mutate(fillcolor = case_when(!is.na(label) ~ "black")) 
-     df_form$label[is.na(df_form$label)] <- ""
-
-     elut_cov <-  elut_tidy %>% 
-     left_join(df_form, by = "Peptide") 
-
-    
-    hm <- elut_cov %>%
-      ggplot(aes( x = FractionOrder, 
-                  y = fct_rev(fct_reorder(Peptide,start)), 
-                  fill = normpep)) +
-      geom_tile() +
-      #scale_fill_continuous(low = "white", high = "black") +
-      scale_fill_gradient(low = "#ffffb5", high = "blue") +
-      scale_x_discrete(expand = c(0,0)) +
-      scale_y_discrete(labels = rev(df_form$label)) + 
-      theme(legend.position = "none",
-            axis.line.x = element_blank(),
-            axis.line.y = element_blank(),
-            axis.text.x = element_blank(),
-            axis.title.y = element_blank(),
-            axis.title.x = element_blank(),
-            axis.ticks.x = element_blank(),
-            axis.ticks.y = element_blank(),
-            axis.text.y = element_blank(),
-            #axis.text.y = element_text(size = 8, margin = ggplot2::margin(t = 0, r = 1, b = 0, l = 0), hjust = 1),
-            panel.spacing = unit(0.1, "lines"),
-            plot.margin = unit(c(0,0,0,0), "lines"),
-            panel.background = element_rect(fill = "#ffffb5"),
-            strip.background = element_blank()) +
-      panel_border(colour = "grey50") + 
-      facet_wrap(~experiment_name, nrow = 1, scales = "free_x") 
-
-    print(axis_tick_spacing)
-    pep_plot <- pepcov_fxn(df_cov, axis_tick_spacing = axis_tick_spacing) 
-     
-    pdf_filename <- paste0(outfile_base, ".pdf")
-    png_filename <- paste0(outfile_base, ".png")
- 
-
-    
-    final <-
-      pep_plot + theme(axis.text.x = element_text(angle = 0)) +
-      hm + 
-      plot_layout(widths = rel_widths) 
-    
-    final %>% ggsave(png_filename, .,device = "png", width = figwidth, height = figheight,  units = units)
-    print(png_filename)
-
-    
-    final %>% ggsave(pdf_filename, ., device = "pdf", width = figwidth, height = figheight, units = units)
-    print(pdf_filename)
-    print(final)
-    return(final)
-}
-
-
-```
-
-```{r}
-
-#old_elut_long <- read_csv("data_files/elut_long.csv")
-
-helper2(old_elut_long, human_proteome,  protein = "CATB_HUMAN", exact = FALSE,
-                 #exps = c( "HEMO_SEC1", "HEK_SEC1", "HEKR_IEX1", "HEMO_IEX1", "HEMO_IEX2"), 
-                 rel_widths = c(1,25), 
-                 figwidth = 25, figheight = 1.5, units = "in", outfile_base = "figures/fig_CATB_HUMAN", axis_tick_spacing = 400, unique = FALSE )
-
-helper2(old_elut_long, human_proteome,  protein = "PRS4_HUMAN", exact = FALSE,
-                 exps = c( "HEMO_SEC1"), 
-                 rel_widths = c(1,4), 
-                 figwidth = 4, figheight = 1.5, units = "in", outfile_base = "figures/fig_PRS4_HUMAN", axis_tick_spacing = 400, unique = FALSE )
-
-
-
-helper2(old_elut_long, human_proteome,  protein = "UBP4_HUMAN", exact = FALSE,
-                 #exps = c( "HEMO_SEC1", "HEK_SEC1", "HEKR_IEX1", "HEMO_IEX1", "HEMO_IEX2"), 
-                 rel_widths = c(1,25), 
-                 figwidth = 25, figheight = 1.5, units = "in", outfile_base = "figures/fig_UBP4_HUMAN", axis_tick_spacing = 400, unique = FALSE )
-
-helper2(old_elut_long, human_proteome,  protein = "UBP11_HUMAN", exact = FALSE,
-                 #exps = c( "HEMO_SEC1", "HEK_SEC1", "HEKR_IEX1", "HEMO_IEX1", "HEMO_IEX2"), 
-                 rel_widths = c(1,25), 
-                 figwidth = 25, figheight = 1.5, units = "in", outfile_base = "figures/fig_UBP11_HUMAN", axis_tick_spacing = 400, unique = FALSE )
-
-helper2(elut_long, arath_proteome,  protein = "PHOT1_ARATH", exact = FALSE,
-                 exps = c("ARATH_IEX1", "ARATH_SEC1"),
-                 #exps = c( "HEMO_SEC1", "HEK_SEC1", "HEKR_IEX1", "HEMO_IEX1", "HEMO_IEX2"), 
-                 rel_widths = c(1,2), 
-                 figwidth = 2.5, figheight = 1.5, units = "in", outfile_base = "figures/fig_PHOT1_ARATH", axis_tick_spacing = 400, unique = TRUE )
-
-helper2(elut_sel, chlre_proteome,  protein = "Q8LPD9", exact = FALSE,
-                 exps = c("CHLRE_SEC1", "CHLRE_IEX1"),
-                 #exps = c( "HEMO_SEC1", "HEK_SEC1", "HEKR_IEX1", "HEMO_IEX1", "HEMO_IEX2"), 
-                 rel_widths = c(1,2), 
-                 figwidth = 2.5, figheight = 1.5, units = "in", outfile_base = "figures/fig_PHOT_CHLRE_Q8LPD9", axis_tick_spacing = 400, unique = TRUE )
-
-#tr|A0A2K3DGW0|A0A2K3DGW0_CHLRE
-#Exact duplicate protein
-helper2(elut_long, chlre_proteome,  protein = "A0A2K3DGW0", exact = FALSE,
-                 
-                 exps = c("CHLRE_IEX1"),
-                 #exps = c( "HEMO_SEC1", "HEK_SEC1", "HEKR_IEX1", "HEMO_IEX1", "HEMO_IEX2"), 
-                 rel_widths = c(1,1.5), 
-                 figwidth = 2, figheight = 1.5, units = "in", outfile_base = "figures/fig_RD23_CHLRE_A0A2K3DGW0", axis_tick_spacing = 400, unique = FALSE )
-
-helper2(elut_long, human_proteome,  protein = "RD23B_HUMAN", exact = FALSE,
-                 exps = c( "HEK_IEX1", "HEK_IEX2", "HEKR_IEX2", "HEK_SEC2"), 
-                 rel_widths = c(1,4), 
-                 figwidth = 3, figheight = 1.5, units = "in", outfile_base = "figures/fig_RD23B_HUMAN", axis_tick_spacing = 400, unique = TRUE)
-
-
-
-helper2(elut_long, arath_proteome,  protein = "RD23B_ARATH", exact = FALSE,
-                 #exps = c("ARATH_IEX1", "ARATH_SEC1" ),
-                 #exps = c( "HEMO_SEC1", "HEK_SEC1", "HEKR_IEX1", "HEMO_IEX1", "HEMO_IEX2"), 
-                 #rel_widths = c(1,4), 
-                 figwidth = 5, figheight = 1.5, units = "in", outfile_base = "figures/fig_RD23B_ARATH", axis_tick_spacing = 400, unique = TRUE )
-
-
-helper2(elut_long, arath_proteome,  protein = "CATB3", exact = FALSE,
-                 exps = c("ARATH_IEX1", "ARATH_SEC1" ),
-                 #exps = c( "HEMO_SEC1", "HEK_SEC1", "HEKR_IEX1", "HEMO_IEX1", "HEMO_IEX2"), 
-                 #rel_widths = c(1,4), 
-                 figwidth = 3, figheight = 1.5, units = "in", outfile_base = "figures/fig_CATB3_ARATH", axis_tick_spacing = 400, unique = TRUE )
-
-
-helper2(elut_long, arath_proteome,  protein = "CATB3", exact = FALSE,
-                 exps = c("ARATH_IEX1", "ARATH_SEC1" ),
-                 #exps = c( "HEMO_SEC1", "HEK_SEC1", "HEKR_IEX1", "HEMO_IEX1", "HEMO_IEX2"), 
-                 #rel_widths = c(1,4), 
-                 figwidth = 3, figheight = 1.5, units = "in", outfile_base = "figures/fig_CATB3_ARATH", axis_tick_spacing = 400, unique = TRUE )
-
-helper2(elut_long, arath_proteome,  protein = "SEBP2", exact = FALSE,
-                 #exps = c( "HEMO_SEC1", "HEK_SEC1", "HEKR_IEX1", "HEMO_IEX1", "HEMO_IEX2"), 
-                 #rel_widths = c(1,4), 
-                 figwidth = 3, figheight = 1.5, units = "in", outfile_base = "figures/fig_SEBP2_ARATH", axis_tick_spacing = 400, unique = TRUE )
-
-
-helper2(elut_long,arath_proteome,  protein = "SEBP1", exact = FALSE,
-                 #exps = c( "HEMO_SEC1", "HEK_SEC1", "HEKR_IEX1", "HEMO_IEX1", "HEMO_IEX2"), 
-                 #rel_widths = c(1,4), 
-                 figwidth = 3, figheight = 1.5, units = "in", outfile_base = "figures/fig_SEBP1_ARATH", axis_tick_spacing = 400, unique = TRUE )
-
-
-ubp15 <- helper2(old_elut_long, human_proteome,  protein = "UBP15_HUMAN", exact = FALSE,
-                 exps = c( "HEMO_SEC1", "HEK_SEC1", "HEKR_IEX1", "HEMO_IEX1", "HEMO_IEX2"), 
-                 rel_widths = c(1,4), figwidth = 3, figheight = 1.5, units = "in", outfile_base = "figures/fig_UBP15_HUMAN", axis_tick_spacing = 400, unique = TRUE )
-
-
-ubp15 <- helper2(elut_long, human_proteome,  protein = "UBP15_HUMAN", exact = FALSE, 
-                 #exps = c( "HEMO_SEC1", "HEK_SEC1", "HEMO_IEX2"), 
-                 rel_widths = c(1,25), figwidth = 25, figheight = 2, units = "in", outfile_base = "figures/fig_UBP15_HUMAN_full", axis_tick_spacing = 400 )
-Q9FPT1
-
-ubp12_arath <- helper2(elut_long, arath_proteome, protein = "Q9FPT1", exact = FALSE, 
-                #exps = c("HEK_SEC1", "HEK_IEX1", "HEMO_IEX1", "HEMO_IEX2"), 
-                rel_widths = c(1,2), figwidth = 3, figheight = 2, units = "in", outfile_base = "figures/plot_UBP12_arath_Q9FPT1", axis_tick_spacing = 400)
-
-ubp_chlre <- helper2(elut_long, chlre_proteome, protein = "A0A2K3E0J5", exact = FALSE, 
-                rel_widths = c(1,4), figwidth = 4, figheight =2, units = "in", outfile_base = "figures/plot_ubp_chlre_A0A2K3E0J5", axis_tick_spacing = 400)
-
-usp_chlre1 <- helper2(elut_long, chlre_proteome, protein = "A0A2K3D2Q9", exact = FALSE, 
-                rel_widths = c(1,4), figwidth = 4, figheight =2, units = "in", outfile_base = "figures/plot_usp_chlre_A0A2K3D2Q9", axis_tick_spacing = 400, unique = TRUE)
-
-usp_chlre_3 <- helper2(elut_long, chlre_proteome, protein = "A0A2K3D2Q9", exact = FALSE, 
-                       exps = c("CHLRE_SEC1"),
-                rel_widths = c(1,2), figwidth = 3, figheight =2, units = "in", outfile_base = "figures/plot_usp_chlre_A0A2K3D2Q9_sec1", axis_tick_spacing = 400, unique = TRUE)
-
-
-
-usp1_chlre2 <- helper2(elut_long, chlre_proteome, protein = "A0A2K3CUI0", exact = FALSE, 
-                rel_widths = c(1,4), figwidth = 4, figheight =2, units = "in", outfile_base = "figures/plot_usp_chlre_A0A2K3CUI0", axis_tick_spacing = 400, unique = TRUE)
-
-
-nasp <- helper2(elut_long, human_proteome,  protein = "NASP_HUMAN", exact = FALSE, 
-                exps = c("HEK_SEC1", "HEK_SEC2"),  rel_widths = c(1,4), figwidth = 2.5, figheight = 1.5, units = "in", outfile_base = "figures/fig_NASP_HUMAN", axis_tick_spacing = 400 )
-
-gart <- helper2(elut_long, human_proteome, protein = "PUR2_HUMAN", exact = FALSE, exps = c("HEK_SEC1", "HEK_SEC2", "HEK_IEX1", "HEK_IEX2"), rel_widths = c(1,4), figwidth = 2.5, figheight = 2, units = "in", outfile_base = "figures/plot_GART", axis_tick_spacing = 400)
-
-nltp <- helper2(elut_long, human_proteome, protein = "NLTP_HUMAN", exact = FALSE, exps = c("HEK_SEC1", "HEK_SEC2", "HEK_IEX2"), rel_widths = c(1,2), figwidth = 3, figheight = 2, units = "in", outfile_base = "figures/plot_NLTP_HUMAN", axis_tick_spacing = 400)
-
-parp <- helper2(elut_long, human_proteome, protein = "PARP1_HUMAN", exact = FALSE, 
-                exps = c("HEK_IEX1", "HEK_IEX2","HEKR_IEX1", "HEKR_IEX2"),  rel_widths = c(1,6), figwidth = 4, figheight = 2, units = "in", outfile_base = "figures/plot_PARP", axis_tick_spacing = 400)
-
-parp <- helper2(elut_long, human_proteome, protein = "PARP1_HUMAN", exact = FALSE,
-                #exps = c("HEK_IEX1", "HEK_IEX2"),  
-                rel_widths = c(1,25), figwidth = 25, figheight = 3, units = "in", outfile_base = "figures/plot_PARP_full", axis_tick_spacing = 400)
-
-
-
-pdli5 <- helper2(elut_long, human_proteome, protein = "PDLI5_HUMAN", exact = FALSE, 
-                 exps = c("HEK_IEX1", "HEK_IEX2", "HEKR_IEX1", "HEKR_IEX2"), 
-                  rel_widths = c(1,4), figwidth = 3, 
-                 #rel_widths = c(1,25), figwidth = 20, 
-                 figheight = 2, units = "in", outfile_base = "figures/plot_PDLI5", axis_tick_spacing = 400)
-
-osr1 <- helper2(old_elut_long, human_proteome, protein = "OXSR1_HUMAN", exact = FALSE, 
-               exps = c("HEK_SEC1", "HEK_SEC2", "HEMO_SEC2"), 
-                rel_widths = c(1,4), figwidth = 4, figheight =2, units = "in", outfile_base = "figures/plot_OXSR1", axis_tick_spacing = 400, unique = FALSE)
-
-
-
-ank <- helper2(elut_long, human_proteome, protein = "ANK1_HUMAN", exact = FALSE, exps = c("HEMO_SEC1", "HEMO_SEC2", "HEMO_IEX1", "HEMO_IEX2"), rel_widths = c(1,2), figwidth = 3, figheight = 2, units = "in", outfile_base = "figures/plot_ANK1", axis_tick_spacing = 400)
-
-abcf <- helper2(elut_long, human_proteome, protein = "ABCF1_HUMAN", exact = FALSE, exps = c("HEK_SEC1", "HEK_IEX1", "HEMO_IEX1", "HEMO_IEX2"), rel_widths = c(1,2), figwidth = 3, figheight = 2, units = "in", outfile_base = "figures/plot_ABCF1", axis_tick_spacing = 400)
-
-tc159 <- helper2(elut_long, arath_proteome, protein = "TC159_ARATH", exact = FALSE, 
-                #exps = c("HEK_SEC1", "HEK_IEX1", "HEMO_IEX1", "HEMO_IEX2"), 
-                rel_widths = c(1,2), figwidth = 3, figheight = 2, units = "in", outfile_base = "figures/plot_ABCF1", axis_tick_spacing = 400)
-
-# Two fragments fit uniprot isoforms
-# One N-terminal is unexplained
-atx2 <- helper2(elut_long, human_proteome, protein = "ATX2_HUMAN", exact = FALSE, 
-               # exps = c("HEK_SEC1", "HEK_SEC2", "HEMO_SEC2"), 
-                rel_widths = c(1,25), figwidth = 25, figheight =2, units = "in", outfile_base = "figures/plot_ATX2", axis_tick_spacing = 400)
-
-suv3 <- helper2(elut_long, human_proteome, protein = "SUV3_HUMAN", exact = FALSE, 
-               # exps = c("HEK_SEC1", "HEK_SEC2", "HEMO_SEC2"), 
-                rel_widths = c(1,25), figwidth = 25, figheight =2, units = "in", outfile_base = "figures/plot_SUV3", axis_tick_spacing = 400)
-
-if2p_chlre <- helper2(elut_long, chlre_proteome, protein = "A0A2K3E0D8_CHLRE", exact = FALSE, 
-                exps = c("CHLRE_IEX1", "CHLRE_SEC2"), 
-                rel_widths = c(1,3), figwidth = 4, figheight =2, units = "in", outfile_base = "figures/plot_IF2P_chlre_A0A2K3E0D8", axis_tick_spacing = 400)
-if2p_human <- helper2(elut_long, human_proteome, protein = "IF2P_HUMAN", exact = FALSE, 
-                exps = c("HEK_IEX1", "HEK_SEC2", "HEKR_IEX1"), 
-                rel_widths = c(1,4), figwidth = 4, figheight =2, units = "in", outfile_base = "figures/plot_IF2P_HUMAN", axis_tick_spacing = 400)
-if2p_arath<- helper2(elut_long, arath_proteome, protein = "F4I420", exact = FALSE, 
-               # exps = c("HEK_IEX1", "HEK_SEC2", "HEKR_IEX1"), 
-                rel_widths = c(1,4), figwidth = 4, figheight =2, units = "in", outfile_base = "figures/plot_IF2P_arath_F4I420", axis_tick_spacing = 400)
-
-if1a_human <- helper2(elut_long, human_proteome, protein = "IF1A_HUMAN", exact = FALSE, 
-                exps = c("HEK_IEX1", "HEK_SEC2", "HEKR_IEX1"), 
-                rel_widths = c(1,4), figwidth = 4, figheight =2, units = "in", outfile_base = "figures/plot_IF1A_HUMAN", axis_tick_spacing = 400)
-if1a_arath<- helper2(elut_long, arath_proteome, protein = "Q9SJB9", exact = FALSE, 
-               # exps = c("HEK_IEX1", "HEK_SEC2", "HEKR_IEX1"), 
-                rel_widths = c(1,4), figwidth = 4, figheight =2, units = "in", outfile_base = "figures/plot_IF1A_arath_Q9SJB9", axis_tick_spacing = 400)
-if1a_chlre <- helper2(elut_long, chlre_proteome, protein = "Q9SJB9", exact = FALSE, 
-                rel_widths = c(1,4), figwidth = 4, figheight =2, units = "in", outfile_base = "figures/plot_IF1A_chlre_A8I4H4", axis_tick_spacing = 400)
-
-if1a_chlre <- helper2(elut_long, chlre_proteome, protein = "A0A2K3DU31", exact = FALSE, 
-                rel_widths = c(1,4), figwidth = 4, figheight =2, units = "in", outfile_base = "figures/plot_IF1A_chlre_A0A2K3DU31", axis_tick_spacing = 400)
-
-
-
-g3bp1_human <- helper2(elut_long, human_proteome, protein = "G3BP1_HUMAN", exact = FALSE, 
-                exps = c("HEK_IEX1", "HEKR_IEX1", "HEKR_IEX2"), 
-                rel_widths = c(1,4), figwidth = 2.5, figheight =1.5, units = "in", outfile_base = "figures/plot_G3BP1_HUMAN", axis_tick_spacing = 400)
-
-
-if2b_human <- helper2(elut_long, human_proteome,  protein = "IF2B_HUMAN", exact = FALSE, exps = c( "HEK_IEX1", "HEKR_IEX1"),  rel_widths = c(1,4), figwidth = 2.5, figheight = 1.5, units = "in", outfile_base = "figures/fig_IF2B_HUMAN", axis_tick_spacing = 400 )
-
-
-if2b_arath <- helper2(elut_long, arath_proteome,  protein = "Q41969", exact = FALSE, 
-        #exps = c( "HEK_IEX1", "HEKR_IEX1"),  
-        rel_widths = c(1,4), figwidth = 2.5, figheight = 1.5, units = "in", outfile_base = "figures/fig_IF2B_ARATH", axis_tick_spacing = 400 )
-
-if2g_arath <- helper2(elut_long, arath_proteome,  protein = "O64490", exact = FALSE, 
-        #exps = c( "HEK_IEX1", "HEKR_IEX1"),  
-        rel_widths = c(1,4), figwidth = 2.5, figheight = 1.5, units = "in", outfile_base = "figures/fig_IF2G_O64490_ARATH", axis_tick_spacing = 400 )
-
-
-if5_arath <- helper2(elut_long, arath_proteome,  protein = "IF5Y", exact = FALSE, 
-        #exps = c( "HEK_IEX1", "HEKR_IEX1"),  
-        rel_widths = c(1,4), figwidth = 2.5, figheight = 1.5, units = "in", outfile_base = "figures/fig_IF5Y_ARATH_ARATH", axis_tick_spacing = 400 )
-
-
-
-if2b_full <- helper2(elut_long, human_proteome,  protein = "IF2B_HUMAN", exact = FALSE,
-        exps = c( "HEK_IEX1", "HEKR_IEX1"), 
-        rel_widths = c(1,4), figwidth = 4, figheight = 1.5, units = "in", outfile_base = "figures/fig_IF2B_HUMAN_full", axis_tick_spacing = 400 )
-
-if2a_full <- helper2(elut_long, human_proteome,  protein = "IF2A_HUMAN", exact = FALSE,
-        exps = c( "HEK_IEX1", "HEKR_IEX1"), 
-        rel_widths = c(1,4), figwidth = 4, figheight = 1.5, units = "in", outfile_base = "figures/fig_IF2A_HUMAN_full", axis_tick_spacing = 400 )
-
-if2g_full <- helper2(elut_long, human_proteome,  protein = "IF2G_HUMAN", exact = FALSE,
-        exps = c( "HEK_IEX1", "HEKR_IEX1"), 
-        rel_widths = c(1,4), figwidth = 4, figheight = 1.5, units = "in", outfile_base = "figures/fig_IF2G_HUMAN_full", axis_tick_spacing = 400 )
-
-if2ba_full <- helper2(elut_long, human_proteome,  protein = "EI2BA_HUMAN", exact = FALSE,
-        exps = c( "HEK_IEX1", "HEKR_IEX1"), 
-        rel_widths = c(1,4), figwidth = 4, figheight = 1.5, units = "in", outfile_base = "figures/fig_EI2BA_HUMAN", axis_tick_spacing = 400 )
-
-if2bb_full <- helper2(elut_long, human_proteome,  protein = "EI2BB_HUMAN", exact = FALSE,
-        exps = c( "HEK_IEX1", "HEKR_IEX1"), 
-        rel_widths = c(1,4), figwidth = 4, figheight = 1.5, units = "in", outfile_base = "figures/fig_EI2BB_HUMAN", axis_tick_spacing = 400 )
-
-if2bd_full <- helper2(elut_long, human_proteome,  protein = "EI2BD_HUMAN", exact = FALSE,
-        exps = c( "HEK_IEX1", "HEKR_IEX1"), 
-        rel_widths = c(1,4), figwidth = 4, figheight = 1.5, units = "in", outfile_base = "figures/fig_EI2BD_HUMAN", axis_tick_spacing = 400 )
-
-
-if2bg_full <- helper2(elut_long, human_proteome,  protein = "EI2BG_HUMAN", exact = FALSE,
-        exps = c( "HEK_IEX1", "HEKR_IEX1"), 
-        rel_widths = c(1,4), figwidth = 4, figheight = 1.5, units = "in", outfile_base = "figures/fig_EI2BG_HUMAN", axis_tick_spacing = 400 )
-
-if5_full <- helper2(elut_long, human_proteome,  protein = "P55010", exact = FALSE,
-        exps = c( "HEK_IEX1", "HEKR_IEX1"), 
-        rel_widths = c(1,4), figwidth = 4, figheight = 1.5, units = "in", outfile_base = "figures/fig_IF5_HUMAN", axis_tick_spacing = 400 )
-
-dhx9_full <- helper2(elut_long, human_proteome,  protein = "DHX9_HUMAN", exact = FALSE,
-        exps = c( "HEK_IEX1", "HEKR_IEX1", "HEK_SEC1", "HEK_SEC2"), 
-        rel_widths = c(1,5), figwidth = 3, figheight = 1.5, units = "in", outfile_base = "figures/fig_DHX9_HUMAN", axis_tick_spacing = 400 )
-
-ddx21_full <- helper2(elut_long, human_proteome,  protein = "DDX21_HUMAN", exact = FALSE,
-        exps = c( "HEK_IEX1", "HEKR_IEX1", "HEK_SEC1"), 
-        rel_widths = c(1,5), figwidth = 3, figheight = 1.5, units = "in", outfile_base = "figures/fig_DDX21_HUMAN", axis_tick_spacing = 400 )
-
-ddx46_full <- helper2(elut_long, human_proteome,  protein = "DDX46_HUMAN", exact = FALSE,
-        exps = c( "HEK_IEX1", "HEKR_IEX1", "HEK_IEX2", "HEKR_IEX2"), 
-        rel_widths = c(1,5), figwidth = 3, figheight = 1.5, units = "in", outfile_base = "figures/fig_DDX46_HUMAN", axis_tick_spacing = 400 )
-
-
-rh38_arath <- helper2(elut_long, arath_proteome,  protein = "RH38_ARATH", exact = FALSE, 
-        exps = c( "ARATH_IEX1", "ARATH_IEX2"),  
-        rel_widths = c(1,4), figwidth = 2.5, figheight = 1.5, units = "in", outfile_base = "figures/fig_RH38_ARATH", axis_tick_spacing = 400 )
-
-pmi1_arath <- helper2(elut_long, arath_proteome,  protein = "PMI1_ARATH", exact = FALSE, 
-        exps = c( "ARATH_IEX1", "ARATH_SEC1"),  
-        rel_widths = c(1,4), figwidth = 2.5, figheight = 1.5, units = "in", outfile_base = "figures/fig_PMI1_ARATH", axis_tick_spacing = 400 )
-
-
-#Long complex
-F4KHD5_arath <- helper2(elut_long, arath_proteome,  protein = "F4KHD5", exact = FALSE, 
-        #exps = c( "ARATH_IEX1", "ARATH_IEX2"),  
-        rel_widths = c(1,4), figwidth = 2.5, figheight = 3, units = "in", outfile_base = "figures/fig_F4KHD5_ARATH", axis_tick_spacing = 400 )
-
-
-#DDX19A_human <- helper2(elut_long, human_proteome,  protein = "DD19A_HUMAN", exact = FALSE,
-#        #exps = c( "HEK_IEX1", "HEKR_IEX1", "HEK_SEC1"), 
-#        rel_widths = c(1,25), figwidth = 20, figheight = 1, units = "in", outfile_base = #"figures/fig_DDX19A_HUMAN", axis_tick_spacing = 400 )
-
-#DDX19B_human <- helper2(elut_long, human_proteome,  protein = "DD19B_HUMAN", exact = FALSE,
-#        #exps = c( "HEK_IEX1", "HEKR_IEX1", "HEK_SEC1"), 
-#        rel_widths = c(1,25), figwidth = 20, figheight = 1, units = "in", outfile_base = #"figures/fig_DDX19B_HUMAN", axis_tick_spacing = 400 )
-
-
-#Splice variant
-# Also in chlamydomonas A8I901
-COPD_human <- helper2(elut_long, human_proteome,  protein = "COPD_HUMAN", exact = FALSE,
-        #exps = c( "HEK_IEX1", "HEKR_IEX1", "HEK_SEC1"), 
-        rel_widths = c(1,4), figwidth = 3, figheight = 1.5, units = "in", outfile_base = "figures/fig_COPD_HUMAN", axis_tick_spacing = 400 )
-
-
-COPD_chlre <- helper2(elut_long, chlre_proteome,  protein = "A8I901", exact = FALSE,
-        #exps = c( "HEK_IEX1", "HEKR_IEX1", "HEK_SEC1"), 
-        rel_widths = c(1,4), figwidth = 3, figheight = 1.5, units = "in", outfile_base = "figures/fig_COPD_A8I901_chlre", axis_tick_spacing = 400 )
-
-
-
-COPA_chlre <-  helper2(elut_long, chlre_proteome,  protein = "A0A2K3CZA0", exact = FALSE,
-        #exps = c( "HEK_IEX1", "HEKR_IEX1", "HEK_SEC1"), 
-        rel_widths = c(1,4), figwidth =3, figheight = 1.5, units = "in", outfile_base = "figures/fig_COPA_A0A2K3CZA0_chlre", axis_tick_spacing = 400 )
-
-
-COPA_arath <-  helper2(elut_long, arath_proteome,  protein = "Q9SJT9", exact = FALSE,
-        #exps = c( "HEK_IEX1", "HEKR_IEX1", "HEK_SEC1"), 
-        rel_widths = c(1,4), figwidth =3, figheight = 1.5, units = "in", outfile_base = "figures/fig_COPA_Q9SJT9_arath", axis_tick_spacing = 400 )
-
-TCOF_human <- helper2(elut_long, human_proteome,  protein = "TCOF_HUMAN", exact = FALSE,
-        #exps = c( "HEKU0_SEC1", "HEKR_SEC2", "HEKR_IEX1"), 
-        rel_widths = c(1,25), figwidth = 20, figheight = 1.5, units = "in", outfile_base = "figures/fig_TCOF_human", axis_tick_spacing = 400 )
-  
-PRC2C_human <- helper2(elut_long, human_proteome,  protein = "PRC2C_HUMAN", exact = FALSE,
-        exps = c( "HEK_IEX1", "HEK_IEX2", "HEKR_IEX1", "HEKR_IEX2"), 
-        rel_widths = c(1,4), figwidth = 4, figheight = 1.5, units = "in", outfile_base = "figures/fig_PRC2C_human", axis_tick_spacing = 400 )
-   
-
-# Fibrocystin
-# A novel model of autosomal recessive polycystic kidney questions the role of the Fibrocystin C-terminus in disease mechanism (2017)
-# in vivo detection of cleaved C-terminus (first in 2017, now here in chlamydomonas)
-A0A2K3DKH4_chlre <-  helper2(elut_long, chlre_proteome,  protein = "A0A2K3DKH4", exact = FALSE,
-        #exps = c( "HEK_IEX1", "HEKR_IEX1", "HEK_SEC1"), 
-        rel_widths = c(1,2), figwidth =3, figheight = 1.5, units = "in", outfile_base = "figures/fig_A0A2K3DKH4_chlre", axis_tick_spacing = 400 )
-
-A0A2K3CUK8_chlre <-  helper2(elut_long, chlre_proteome,  protein = "A0A2K3CUK8", exact = FALSE,
-        #exps = c( "HEK_IEX1", "HEKR_IEX1", "HEK_SEC1"), 
-        rel_widths = c(1,2), figwidth =3, figheight = 1.5, units = "in", outfile_base = "figures/fig_eif4b_A0A2K3CUK8_chlre", axis_tick_spacing = 400 )
-
-#DDX17
-A0A2K3DW82_chlre <-  helper2(elut_long, chlre_proteome,  protein = "A0A2K3DW82", exact = FALSE,
-        #exps = c( "HEK_IEX1", "HEKR_IEX1", "HEK_SEC1"), 
-        rel_widths = c(1,2), figwidth =3, figheight = 1.5, units = "in", outfile_base = "figures/fig_ddx17_A0A2K3DW82_chlre", axis_tick_spacing = 400 )
-
-
-
- 
-
-#if2b n-terminal connects eif2 with eif2B
-plot_spacer() + if5_full + if2a_full + if2b_full + if2g_full+ 
-  if2ba_full + if2bb_full + if2bd_full + if2bg_full +  plot_layout(ncol = 1)
-
-#if2b n-terminal connects eif2 with eif2B
-plot_spacer() + if5_full + if2a_full + if2b_full +if2bb_full +  plot_layout(ncol = 1)
-
-
-#Repeat this for arabidopsis
-plot_spacer() + if2a_full + if2b_full + if2g_full + if5_full+ plot_layout(ncol = 1)
-
-#removing  C-terminus of if2b gets rid of if5 binding site (Check with structure model)
-
-
-plot_spacer() + if2a_arath + if2b_arath + if5_arath + plot_layout(ncol = 1)
-
-
-plot_spacer() + if2p_human + if2p_chlre +if2p_arath + plot_layout(ncol = 1)
-
-# Do breaks in patterns tend to happen between domains
-# Do breaks in patterns tend to happen between exons?
-# What can we say about trends in protein pattern
-# What explains the weird patterns?
-# Can you predict which proteins have clean elutions 
-#RH38
-
-
-#TC159_ARATH = known proteolysis event, also clearly in soybn
-
-
-
-
-```
-
-
-```{r}
-human_euNOG <- read_delim("/project/cmcwhite/data/peptide_elutions/protein_identification/eggnog_mapping/human_hmmer_euNOG.mapping", delim = "\t") %>%
-  separate(ProteinID, into = c(NA, "Entry", NA), sep  = "[|]")
-chlre_euNOG <- read_delim("/project/cmcwhite/data/peptide_elutions/protein_identification/eggnog_mapping/chlre_hmmer_euNOG.mapping", delim = "\t") %>%
-  separate(ProteinID, into = c(NA, "Entry", NA), sep  = "[|]")
-arath_euNOG <- read_delim("/project/cmcwhite/data/peptide_elutions/protein_identification/eggnog_mapping/arath_hmmer_euNOG.mapping", delim = "\t") %>%
-  separate(ProteinID, into = c(NA, "Entry", NA), sep  = "[|]")
-
-human_chlre_arath_euNOG <- bind_rows(human_euNOG, chlre_euNOG, arath_euNOG) 
-
-
-#positives <- read_csv("data_files/positive_filenames.txt", col_names = "filename") %>% 
-#  separate(filename, into =c("spec", "experiment_type", "ProteinID"), sep = "_", extra= "merge") #%>%
-#  mutate(ProteinID = str_replace(ProteinID, '.tiff', '')) %>%
-  
-#  mutate(experiment_name = paste0(spec, "_", experiment_type))%>%
-#  separate(ProteinID, into = c(NA,"Entry", NA,  NA, NA)) %>%
-#  mutate(status = "Positive")
-
-
-eggnog_annot <- read_delim("/project/cmcwhite/data/peptide_elutions/annotation_files/euNOG.annotations.tsv", delim = "\t", col_names = c("tmp", "ID", "tmp2", "tmp3", "tmp4", "annot")) %>%
-  select(ID, annot)
-
-#positives_id <- positives  %>%
-
-#  left_join(human_chlre_arath_euNOG, by ="Entry") %>%
-#  arrange(ID) %>%
-#  mutate(status = "positive")
-
-ortho_count <- positives_id %>%
-  group_by(ID) %>%
-  mutate(numexps = n()) %>% 
-  arrange(desc(numexps)) %>%
-  ungroup
-
-
-
-ortho_count %>%
-  filter(!is.na(ID)) %>%
-  left_join(eggnog_annot, by = "ID") %>% 
-  View()
-
-```
-
-
-
-
-Compare fragments to blood paper
-Blood proteoform atlas
-Doesn't have calpastatin (known erythrocyte proteoform) or USP15 (very strong in red blood cells). Could be due to length limitations of top down.  
-```{r}
-table_s4 <- read_csv("blood_proteoform_atlas/science.aaz5284_table_s4.csv") %>% select(Entry = `Uniprot Accession #`, desc = `Protein Description`, ntrunc = `N-Terminal Truncation`, ctrunc= `C-Terminal Truncation`, splicing =`Alternative splicing*`, seq = `Identified Sequence`, start = `Start Amino Acid Index`, end = `End Amino Acid Index`, seqlen= `Sequence Length`, hits = `Hit Count` )
-table_s5 <- read_csv("blood_proteoform_atlas/science.aaz5284_table_s5.csv") %>%  select(Entry = `UniProt Accession #`, desc = `Protein Description`,ntrunc = `N-terminal truncation`, ctrunc= `C-terminal truncation`, splicing =`Alternative splicing`, seq = `Identified Sequence`, start = `Start Amino Acid Index`, end = `End Amino Acid Index`, seqlen= `Sequence Length`, hits = `Hit Count` )
-
-blood_proteoforms <- bind_rows(table_s4, table_s5) %>%
-  separate(Entry, into = c("Entry", NA), sep = "-") %>%
-  filter(!grepl("MSTRG.", Entry))
-
-
-```
-
-```{r}
-
-bps_blood <- fragment_data_terminal %>%
-  filter(grepl("HUMAN", ProteinID)) %>% 
-  filter(term %in% c("nterm", "cterm", "internal")) %>% 
-  select(Entry, Entry_name, experiment_name, ProteinID, Start, End, term, seqlen, peakid, cterm_pos, nterm_pos) %>% unique() %>%
-  #separate(ProteinID, into = c(NA, "Entry", "Entry_name"), sep = "[|]", remove = FALSE) %>%
-  inner_join(blood_proteoforms, by = "Entry")
-
-
-  
- bps_blood %>%
-  filter(term == "nterm") %>%
-   filter(ctrunc == "yes") %>% 
-  # filter(seqlen.y >= end-4) %>%
-  ggplot(aes(x = cterm_pos, y = end, label = paste(ProteinID, seqlen.y)))  + 
-  geom_point() +
-   geom_abline(intercept = 0, slope = 1)
-ggplotly()
-
-#ABCF1 position 30 vs 42 (blood) nvmerind
-#PAIRB_HUMAN position 32 vs 102 (blood)
-
-bps_blood %>%
-  filter(term == "cterm") %>%
-   filter(ntrunc == "yes") %>% 
-  # filter(seqlen.y >= end-4) %>%
-  ggplot(aes(x = nterm_pos, y = start, label =paste(ProteinID, cterm_pos, seqlen.y, seqlen.x)))   + 
-  geom_point()+ 
-  geom_abline(slope =1, intercept = 0)
-ggplotly()
-```
-
-```{r}
-#N-terminal peptides
-# HEMO_IEX1, 2, SEC1, 2
-pairb <- short_tidy_unique %>% 
-  filter(grepl("PAIRB", ProteinID)) %>% 
-  #filter(grepl("HEMO", experiment_name)) %>%
-  b_w_plot()
-pairb
-
-abcf1 <- short_tidy_unique %>% 
-  filter(grepl("ABCF1", ProteinID)) %>% 
-  #filter(grepl("HEMO", experiment_name)) %>%
-  b_w_plot()
-abcf1
-
-#C-terminal peptides
-# But not in HEMO...
-cald1 <- short_tidy_unique %>% 
-  filter(grepl("CALD1", ProteinID)) %>% 
-  #filter(grepl("HEMO", experiment_name)) %>%
-  b_w_plot()
-cald1
-#753,723 (blood) short c-terminal fragment
-
-# Known light chain fragment
-catc <- short_tidy_unique %>% 
-  filter(grepl("CATC", ProteinID)) %>% 
-  #filter(grepl("HEMO", experiment_name)) %>%
-  b_w_plot()
-catc
-#complex pattern, cleaved into three domains
-
-#Line up with minor c-terminal fragment, not major one
-# 1159 + is major fragment
-# 1299 is only one that  matches 1285 blood atlas fragment, only one peptide
-pds5a<- short_tidy_unique %>% 
-  filter(grepl("PDS5A", ProteinID)) %>% 
-  #filter(grepl("HEMO", experiment_name)) %>%
-  b_w_plot()
-pds5a
-
-
-# 671 613 (blood)
-# 536 more dominant (was missing from manual classification)
-ddx17<- short_tidy_unique %>% 
-  filter(grepl("DDX17", ProteinID)) %>% 
-  #filter(grepl("HEMO", experiment_name)) %>%
-  b_w_plot()
-ddx17
-
-# 536 more dominant (was missing from manual classification)
-npm<- short_tidy_unique %>% 
-  filter(grepl("NPM", ProteinID)) %>% 
-  #filter(grepl("HEMO", experiment_name)) %>%
-  b_w_plot()
-npm
-# 240 vs. 231(blood)
-#Nucleophosmin, C-terminal domain only
-
-#ACTUALLY this match is npm and ddx17 only. Each have several similar length fragments in blood atlas
-# Check again for new fragments
-```
-
-
-```{r}
-a <- fragment_data_terminal %>%
-  filter(grepl("HUMAN", ProteinID)) %>% 
-  filter(term %in% c("nterm", "cterm", "internal")) %>% 
-  select(experiment_name, ProteinID, Start, End, seqlen, peakid, cterm_pos, nterm_pos) %>% unique() %>%
-  ggplot(aes(x = cterm_pos - nterm_pos)) + 
-  geom_histogram(binwidth = 10) +
-  xlim(0,2000)
-
-c <- blood_proteoforms %>%
-  filter(start >= 10) %>% 
- 
-  select(Entry, seqlen) %>%
-  unique() %>% 
-  ggplot(aes(x = seqlen)) +
-  geom_histogram(binwidth = 10) +
-  xlim(0,2000)
-
-plot_grid(a,b,c, ncol = 1)
-
-
-blood_proteoforms %>%
-  select(Entry, start, end) %>%
-  unique() %>%
-  group_by(Entry) %>%
-  summarise(n = n()) %>%
-  ggplot(aes(x = n)) + 
-  geom_histogram(binwidth = 1)
-
- fragment_data_terminal %>%
-  filter(grepl("HUMAN", ProteinID)) %>% 
-  filter(term %in% c("nterm", "cterm", "internal")) %>% 
-  select(ProteinID, Start, End,  cterm_pos, nterm_pos) %>% unique() %>%
-  group_by(ProteinID) %>%
-  summarise(n = n()) %>%
-  ggplot(aes(x = n)) + 
-  geom_histogram(binwidth = 1)
-
- 
-#Much fewer per protein than blood atlas, 1-4
-# Compare to nterminomics too
-
-```
-
-```{r}
-#TOPSITE
-#Tables seem incomplete vs. website ex.  Q92841 cleavage at pos TC10456
-acs <- read_csv("outside_data/output_20211220/acs.csv")
-
-cleavages <- read_csv("outside_data/output_20211220/cleavages.csv")
-
-cleavagesites <- read_csv("outside_data/output_20211220/cleavagesites.csv")
-
-nterms <- read_csv("outside_data/output_20211220/nterms.csv") %>% mutate(term  = "nterm") %>%
-  left_join( read_csv("outside_data/output_20211220/nterm2evidences.csv"), by = c("id" = "nterm_id"))
-
-cterms <- read_csv("outside_data/output_20211220/cterms.csv")%>% mutate(term   = "cterm") %>%
-  left_join( read_csv("outside_data/output_20211220/cterm2evidences.csv"), by = c("id" = "cterm_id"))
-
-evidences <- read_csv("outside_data/output_20211220/evidences.csv")
-
-imports <- read_csv("outside_data/output_20211220/imports.csv") %>% 
-  select(id, name, evidence_id)
-  #evidence_id 146719
-
-```
-
-```{r}
-tf_cleavages <-  cleavages %>%
-  filter(!grepl("-Pep", idstring)) %>% 
-    separate(idstring, into = c("P", "S"), sep= "[)]-.*S[(]", remove = FALSE) %>%
-    mutate(P = str_replace(P, "^..", "")) %>% 
-   #  mutate(P = str_replace(P, ".$", "")) %>%
-    separate(S, into = c("S", NA), sep = "[)]at[(]" ) %>% select(P, S) %>% unique %>% 
-  filter(!grepl("-[23456789]$", S)) %>%
-    filter(!grepl("-[23456789]$", P)) %>%
-   mutate(S = str_replace(S, "-1$", "")) %>%
-    mutate(P = str_replace(P, "-1$", "")) 
-
-
-test <- nterms %>%
-  separate(idstring, into = c("Entry", NA), sep = "-", remove= FALSE)
-  
-
-
-fragment_data_terminal %>%
-  separate(ProteinID, into = c(NA, "Entry", NA), sep = "[|]", remove = FALSE) %>%
-
-  inner_join(test, by = c("Entry", "term")) %>%
-  ggplot(aes(x = pos, y = cterm_pos, label = ProteinID)) +
-  geom_point() +
-  geom_abline(slope = 1, intercept = 0)
-
-
-```
-
-# NOT USED
-```{r}
-isoform_1 <- human_w_isoform_formatted %>% 
-  filter(isoform_num == 1) # primary isoform
-
-
-
-a <- bps_identified %>% 
-  filter(grepl("HEMO", experiment_name)) %>%
-  filter(terminal == "nterm" ) %>%
-  select(ProteinID, peak, actual_terminal_peptide) %>%
-  unique %>% left_join(isoform_1) %>%
-  mutate(fraglength = actual_terminal_peptide/isoform_length) %>%
-  ggplot(aes(actual_terminal_peptide)) + 
-    geom_histogram() + 
-  xlim(0, 4000)
-  
-b <- isoform_1 %>%
-   separate(ProteinID, into = c(NA, "Entry", "Entry_name"), sep = "[|]", remove = FALSE) %>% 
-  inner_join(blood_proteoforms, by = "Entry") %>% 
-  filter(ctrunc== "yes" ) %>% 
-  filter(ntrunc == "no") %>%
-  mutate(fraglength = seqlen/isoform_length) %>%
-  ggplot(aes(seqlen)) + 
-    geom_histogram() + 
-  xlim(0,4000)
-
-plot_grid(a, b, ncol = 1)
-  
-# Different length distribution
-# The Blood Proteoform Atlas = short
-# Ours = mostly long
-```
-
-
-
-```{r}
-#G3BP1
-arath_G3BP1s <- c("F4J8X6", "Q8VYJ4", "Q9FME2", "F4IT98", "Q8GW56", "Q9ZPR2", "Q84JH2", "F4I0L1", "Q9LDI9", "Q9LMX6", "F4K7E0", "Q9FND0", "Q9M2S5", "F4JED3") 
-
-positives_split %>% filter(Entry %in% arath_G3BP1s)
-#mixed_models %>% separate(ProteinID, into = c(NA, "Entry", NA), sep = "[|]") %>%
-  filter(Entry %in% arath_G3BP1s)
-
-
-```
-
-```{r}
-  
-  
-elut_long <- read_csv("data/short_tidy.csv")
-elut_totals <- elut_long %>%
-  filter(pepcount > 0) %>%
-  filter(grepl("HUMAN", ProteinID)) %>%
-  group_by(ProteinID, experiment_name) %>%
-  summarize(totpeps = sum(pepcount)) %>%
-  ungroup %>%
-  separate(ProteinID, into = c(NA, "Entry", NA), sep  = "[|]")
-
-identified_frags <- fragment_data_terminal %>% 
-  select(Entry, experiment_name ) %>% mutate(status = "positive")
-
-elut_totals %>%
-
-  left_join(identified_frags) %>%
-  mutate(status = case_when(is.na(status) ~ "negative", TRUE ~ status)) %>%
-  #sample_n(2000) %>%
-  ggplot(aes(x = totpeps)) +
-  xlab("PSMs?")+ 
-  geom_histogram(binwidth = 100) +
-  facet_wrap(~status, scales = "free_y", ncol = 1)
-
-
- elut_long %>%
-    filter(grepl("HUMAN", ProteinID)) %>%
-  filter(pepcount > 0) %>%
-  select(ProteinID, Peptide) %>%
-  #unique() %>%
-
-  group_by(ProteinID) %>%
-  summarize(totpeptides = n()) %>%
-  ungroup %>%
-  separate(ProteinID, into = c(NA, "Entry", NA), sep  = "[|]")
-
-elut_peptides <- elut_long %>%
-    filter(grepl("HUMAN", ProteinID)) %>%
-  filter(pepcount > 0) %>%
-  select(ProteinID, Peptide) %>%
-  unique() %>%
-
-  group_by(ProteinID) %>%
-  summarize(totpeptides = n()) %>%
-  ungroup %>%
-  separate(ProteinID, into = c(NA, "Entry", NA), sep  = "[|]")
-
-abundance_bias_plot <- elut_peptides %>%
-  
-  left_join(identified_frags) %>%
-  mutate(status = case_when(is.na(status) ~ "Proteins without truncations", TRUE ~ "Proteins with truncations")) %>%
-  unique() %>%
-  #sample_n(2000) %>%
-  ggplot(aes(x = totpeptides)) + 
-  geom_histogram(binwidth = 1) +
-  #geom_vline(xintercept= 8, linetype = "dashed") +
-  #xlim(0,100) +
-  
-  
-  scale_x_continuous(limits= c(0,200), expand  = c(0,0)) + 
-  scale_y_log10(labels = scales::comma_format(accuracy=1), expand = c(0,0)) + 
-  xlab("Observed unique peptides\nper protein") +
-    ylab("# Proteins") +
-  theme(strip.background = element_blank()) +
-  facet_wrap(~status, scales = "free_y", ncol = 1)
-
-
-abundance_bias_plot %>% ggsave("figures/abundance_bias_plot.png", .,device = "png", width = 2.2, height = 2.2,  units = "in")
-
-abundance_bias_plot %>% ggsave("figures/abundance_bias_plot.pdf", ., device = "pdf", width = 2.2, height = 2.2, units = "in")
-
-#For figure establishing rarity of given examples
-
-```
-
-
-
-
-stat_fig
-```{r}
-
-
-stats_plot <- stats_plot+ theme(legend.position = "bottom") + 
-              guides(shape =guide_legend(nrow=4,byrow=TRUE, reverse = TRUE, title = NULL),    
-                     color=guide_legend(nrow=4,byrow=TRUE, reverse = TRUE, title = NULL))
-
-stats_legend <- get_legend(stats_plot)
-
-stats_nolegend  <- stats_plot + theme(legend.position = "none")
-
-stats_fig <- abundance_bias_plot + prevalance_plot + (stats_nolegend
-                                                      / plot_grid(stats_legend) + plot_layout(heights = c(1,0.5))) +
-  plot_annotation(tag_levels = 'A')  & 
-  theme(plot.tag = element_text(size = 8))
-
-stats_fig %>% ggsave("figures/stats_fig.png", .,device = "png", width = 5.5, height = 3,  units = "in")
-stats_fig %>% ggsave("figures/stats_fig.pdf", ., device = "pdf", width = 5.5, height = 3, units = "in")
-
-
-```
 
 

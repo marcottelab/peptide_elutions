@@ -1,3 +1,47 @@
+
+# This function is for plotting one protein at a time
+b_w_plot <- function(short_tidy_unique_sel, pubtheme = TRUE){
+  
+  numprots <-  short_tidy_unique_sel %>% pull(ProteinID) %>% unique %>% length()
+  print(numprots)
+  plt <- short_tidy_unique_sel %>%
+    group_by(Peptide, experiment_name) %>%
+    mutate(pepcount = pepcount/ max(pepcount)) %>%
+    ungroup %>%
+    ggplot(aes( x = FractionOrder , y = fct_rev(fct_reorder(Peptide, Start)), fill = pepcount)) +
+    
+    geom_tile() +
+    geom_blank(aes(x = totfracs)) +  
+    facet_grid(ProteinID  ~ experiment_name , scales = "free_y", drop = FALSE) +
+    scale_fill_gradient(low = "#FFFFC6", high = "#3F1CC6", na.value = '#FFFFC6' ) +
+    scale_x_continuous(limits = c(0, NA),breaks = seq(0, 1000, 30) ) +
+    scale_y_discrete(expand = c(0,0)) + #This gets rid of the bottom grey space to help with alignment
+    
+    theme(panel.background = element_rect(fill = "#FFFFC6"),
+          panel.spacing = unit(0.2, "lines"), 
+          axis.line.x = element_line(color = "black"),
+          axis.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.title.y = element_blank(),  
+          axis.text.x = element_text(color = "black", angle = 45,vjust =1 , hjust = 1 ),
+          legend.position = "none",
+          strip.background = element_rect(fill = "white"))
+  
+  if(pubtheme == TRUE){
+    plt <- plt +
+      theme_nothing() + 
+      theme( panel.background = element_rect(fill = "#FFFFC6"),
+             panel.spacing = unit(0.25, "lines"),
+             strip.text = element_text(), 
+             plot.margin = unit(margin(0.5,0.5,0.5,0.5), "lines"))
+    
+  }
+  
+  return(plt)
+  
+}
+
 pep_heatmap_fxn <- function(elut_short, pepmods = FALSE){
 
   hm_plot <- elut_short %>%
