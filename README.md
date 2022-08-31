@@ -8,26 +8,12 @@ Claire D. McWhite, Wisath Sae-Lee, Anna L. Mallam, Nicolas A. Gort Freitas, and 
 A short paragraph to explain the pipeline and how it works.
 
 ### Input data
+If the fractionation experiment was analyzed with MSFragger, run the following script to combine data from each fraction into one single file.<Enter> 
 
-***TO-DO***
-Simplify input data format since peptide_identification.R will reformat input file to short_tidy form anyway.
+Example code: python3 /scripts/format_MSFragger_files.py --root_folder **folder where your results from MSFragger analysis are located** --fractionation_name **name of your fractionation experiment** --output_file **name of outputfile wide format** --fraction_order **name of outputfile fraction order file**
 
-Four column csv, describing the which fraction each peptide is found in, and its amount. 
-
-ExperimentID     | FractionID                 | Peptide                           | PeptideCount
----------------- | -------------------------- | --------------------------------- | ------------
-Hemolysate_IEX_1 | Hemolysate_IEX_06_10032017 | ACANPAAGSVILLENLR                 | 3.0
-Hemolysate_IEX_1 | Hemolysate_IEX_06_10032017 | ADGLAVIGVLMK                      | 33.0
-Hemolysate_IEX_1 | Hemolysate_IEX_07_10032017 | ADGLAVIGVLMKVGEANPK               | 2.0
-Hemolysate_IEX_1 | Hemolysate_IEX_07_10032017 | ADGLAVIGVLMKVGEANPKLQKVLDALQAIK   | 4.0
-Hemolysate_IEX_1 | Hemolysate_IEX_07_10032017 | ADGLAVIGVLMKVGEANPKLQKVLDALQAIKTK | 3.0
-
-Alternately, begin with a wide csv of peptide identifications x fractionID
-
-Hemolysate_IEX_1.wide.csv
-Peptide | Hemolysate_IEX_07 | Hemolysate_IEX_08 | Hemolysate_IEX_09_10032017
---------|-------------------|-------------------|---------------------------
-
+Expected result:<Enter> 
+![alt text](https://user-images.githubusercontent.com/32718019/187560693-c5e8851d-a7cc-4705-bf01-0b6e575f1673.png)
 
 ### Processing
 Process peptide files for Gaussian fitting 
