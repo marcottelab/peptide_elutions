@@ -4,7 +4,7 @@ Analysis accompanying "Alternative proteoforms and proteoform-dependent assembli
 
 Claire D. McWhite, Wisath Sae-Lee, Anna L. Mallam, Nicolas A. Gort Freitas, and Edward M. Marcotte
 
-This README demonstrates hhow to analyze your fractionation experiment for the existence of proteoforms. 
+The proteoform analysis comprises of 3 parts: processing, scoring, and vizualizing.  
 
 ### Input data
 If the fractionation experiment was analyzed with MSFragger, run the following script to combine data from each fraction into one single file.<Enter> 
