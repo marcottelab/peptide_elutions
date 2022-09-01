@@ -9,12 +9,21 @@ Nicolas A. Gort Freitas, Silvia Ramundo, Masayuki Onishi, and Edward M. Marcotte
 The proteoform analysis comprises of 3 parts: processing, scoring, and vizualizing.  
 
 ### Input data
+**1. peptide information from fractionation experiment**
 If the fractionation experiment was analyzed with MSFragger, run the following script to combine data from each fraction into one single file.<Enter> 
 
 Example code: python3 /scripts/format_MSFragger_files.py --root_folder **folder where your results from MSFragger analysis are located** --fractionation_name **name of your fractionation experiment** --output_file **name of outputfile wide format** --fraction_order **name of outputfile fraction order file**
 
 Expected result:<Enter> 
 ![alt text](https://user-images.githubusercontent.com/32718019/187560693-c5e8851d-a7cc-4705-bf01-0b6e575f1673.png)
+	
+**2. In-silico digest peptides**
+Example code: python2.7 /scripts/trypsin.py --input_file /test/uniprot_human.fasta --output_file uniprot_human_digested.csv --miss 2 --positions True
+	
+Expected result:<Enter>
+![alt text](https://user-images.githubusercontent.com/32718019/188028137-ccdc1511-13e7-40ff-883f-f5075daf1ed1.png)
+
+
 
 ### Processing
 Process peptide files for Gaussian fitting 
