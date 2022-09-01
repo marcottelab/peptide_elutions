@@ -2,7 +2,9 @@
 
 Analysis accompanying "Alternative proteoforms and proteoform-dependent assemblies in humans and plants"
 
-Claire D. McWhite, Wisath Sae-Lee, Anna L. Mallam, Nicolas A. Gort Freitas, and Edward M. Marcotte
+Claire D. McWhite, Wisath Sae-Lee, Yawning Yuan, Anna L. Mallam, 
+Nicolas A. Gort Freitas, Silvia Ramundo, Masayuki Onishi, and Edward M. Marcotte
+
 
 The proteoform analysis comprises of 3 parts: processing, scoring, and vizualizing.  
 
