@@ -8,8 +8,8 @@ output: html_document
 ```{r}
 library(shiny)
 
-elut_viewer <- function(protid, short_tidy_both , domaindis_setup){
-  tester <-short_tidy_both %>%
+elut_viewer <- function(protid, short_tidy_unique , domaindis_setup){
+  tester <-short_tidy_unique %>%
   #filter(source == "semienzy") %>%
   filter(grepl(paste0(protid, "$"), ProteinID)) 
 
@@ -119,6 +119,14 @@ server = function(input, output) {
 }
 
 
+```
+
+```{r}
+
+short_tidy_unique <- read_csv("data_files/short_tidy_unique.csv")
+domaindis_setup <- read_csv("data_files/domaindis_setup.csv")
+
+
 elut_viewer("WDR44_HUMAN", short_tidy_unique, domaindis_setup)
 ```
 
@@ -144,11 +152,14 @@ elut_viewer("ABCBA_HUMAN", short_tidy_unique, domaindis_setup)
 #elut_viewer("BXL7_ARATH", short_tidy_unique, domaindis_setup) # loss of fibronectin cterm superclean. connector?
 #elut_viewer("IF2C_ARATH", short_tidy_unique, domaindis_setup) # very broken up
 #elut_viewer("IF4B3_ARATH", short_tidy_unique, domaindis_setup)
+
+
+
 #elut_viewer("F4I420_ARATH", short_tidy_unique, domaindis_setup)
 #elut_viewer("F4KHD5_ARATH", short_tidy_unique, domaindis_setup) # super long
 elut_viewer("Q94AJ9_ARATH", short_tidy_unique, domaindis_setup)
 elut_viewer("Q9FMM3_ARATH", short_tidy_unique, domaindis_setup)
-elut_viewer("IF4G1_ARATH", short_tidy_unique, domaindis_setup)
+elut_viewer("IF4G1_ARATH", short_tidy_unique, domaindis_setup) # Cleaved between domains 
 elut_viewer("AMI1_ARATH", short_tidy_unique, domaindis_setup)
 elut_viewer("COPA2_ARATH", short_tidy_unique, domaindis_setup) # NIce
 elut_viewer("COPA1_ARATH", short_tidy_unique, domaindis_setup) # NIce
@@ -288,6 +299,9 @@ elut_viewer("A8IIP7_CHLRE", short_tidy_unique, domaindis_setup) # ATPase lid alo
 
 elut_viewer("ENSA_HUMAN", short_tidy_unique, domaindis_setup) # I don't see it
 elut_viewer("IF2P_HUMAN", short_tidy_unique, domaindis_setup)
+
+
+
 elut_viewer("AP2A1_HUMAN", short_tidy_unique, domaindis_setup) # So-so
 elut_viewer("RU2A_HUMAN", short_tidy_unique, domaindis_setup) # Not done yet with this one
 #elut_viewer("PARP1_HUMAN", short_tidy_unique, domaindis_setup)
@@ -311,6 +325,24 @@ elut_viewer("COPD_HUMAN", short_tidy_unique, domaindis_setup) # skipped
 #elut_viewer("CDC73_HUMAN", short_tidy_unique, domaindis_setup) # Added to figure 4
 #elut_viewer("LARP1_HUMAN", short_tidy_unique, domaindis_setup) # disordered alone in SEC and IEXin mTORC1 complex
 #elut_viewer("DDX42_HUMAN", short_tidy_unique, domaindis_setup) # only iex
+
+
+elut_viewer("DDX3X_HUMAN", short_tidy_unique, domaindis_setup) # SEC and IEX loss of n disordered
+
+
+elut_viewer("IF2P_HUMAN", short_tidy_unique, domaindis_setup)
+elut_viewer("DDX42_HUMAN", short_tidy_unique, domaindis_setup)
+elut_viewer("IF2C_ARATH", short_tidy_unique, domaindis_setup) # very broken up
+elut_viewer("IF4B3_ARATH", short_tidy_unique, domaindis_setup)
+elut_viewer("DDX17_HUMAN", short_tidy_unique, domaindis_setup) # iex loss of n and c disordered
+elut_viewer("DHX9_HUMAN", short_tidy_unique, domaindis_setup) # Loss of first rna binding domain, SEC and IEX
+elut_viewer("IF4G1_HUMAN", short_tidy_unique, domaindis_setup) # skipped, complex pattern
+elut_viewer("IF4G2_HUMAN", short_tidy_unique, domaindis_setup) # skipped, complex pattern
+elut_viewer("DDX46_HUMAN", short_tidy_unique, domaindis_setup)# loss of c term diso in iex
+elut_viewer("DDX21_HUMAN", short_tidy_unique, domaindis_setup) # SEC and IEX loss of n disordered
+
+
+
 #elut_viewer("LRC47_HUMAN", short_tidy_unique, domaindis_setup) # All around nice, also signal peptide?  # VERY clear loss of 2nd gene fusion domain Add
 #elut_viewer("PAIRB_HUMAN", short_tidy_unique, domaindis_setup) # Just n-terminal domain alone (SEC and IEX)
 #elut_viewer("NOA1_HUMAN", short_tidy_unique, domaindis_setup) # Not the  best
@@ -357,12 +389,18 @@ elut_viewer("IF4G1_HUMAN", short_tidy_unique, domaindis_setup) # skipped, comple
 elut_viewer("CALD1_HUMAN", short_tidy_unique, domaindis_setup) # final 100 disordered alone, SEC and IEX
 elut_viewer("DHX9_HUMAN", short_tidy_unique, domaindis_setup) # Loss of first rna binding domain, SEC and IEX
 elut_viewer("UBP2L_HUMAN", short_tidy_unique, domaindis_setup) # skipped, complex pattern
+
+
+
 elut_viewer("WDR44_HUMAN", short_tidy_unique, domaindis_setup) # iex, clear loss before wdr domains at 500
 elut_viewer("DDX46_HUMAN", short_tidy_unique, domaindis_setup)# loss of c term diso in iex
 elut_viewer("ZCCHV_HUMAN", short_tidy_unique, domaindis_setup) # skipped, complex pattern
 elut_viewer("SUV3_HUMAN", short_tidy_unique, domaindis_setup) # loss of disordered c, iex and sec
 elut_viewer("ATX2L_HUMAN", short_tidy_unique, domaindis_setup) # right before ataxin-2 c terminal
 elut_viewer("DDX17_HUMAN", short_tidy_unique, domaindis_setup) # iex loss of n and c disordered
+
+
+
 elut_viewer("NOB1_HUMAN", short_tidy_unique, domaindis_setup) # skipped, low coverage
 elut_viewer("SMRC1_HUMAN", short_tidy_unique, domaindis_setup) # SMARCC n-terminal alone, both iex
 elut_viewer("IDH3B_HUMAN", short_tidy_unique, domaindis_setup) # at 150. Mid domain candidate? Maybe isoform C? alternate c reading frame
@@ -372,6 +410,12 @@ elut_viewer("GLU2B_HUMAN", short_tidy_unique, domaindis_setup) #iex only
 
 elut_viewer("CBR1_HUMAN", short_tidy_unique, domaindis_setup) # skipped, dont' see it
 elut_viewer("IF4G2_HUMAN", short_tidy_unique, domaindis_setup) # complicated, inconsistent
+
+elut_viewer("IF4G2_HUMAN", short_tidy_unique, domaindis_setup) # complicated, inconsistent
+
+
+
+
 elut_viewer("PP1R7_HUMAN", short_tidy_unique, domaindis_setup) # skipped, don't see it
 elut_viewer("ENAH_HUMAN", short_tidy_unique, domaindis_setup) # lost of vasp tetrametization in one set if iex
 elut_viewer("ATX2_HUMAN", short_tidy_unique, domaindis_setup) # skipped unclear breakpoints, 

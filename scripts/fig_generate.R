@@ -132,7 +132,7 @@ helper2 <- function(elut_long, domaindis, protein = NULL, exact = FALSE, exps = 
 #--rel_widths 4 
 #--width 5
 
-
+#Rscript scripts/fig_generate.R --ID IF2P_HUMAN --tidy_psms data_files/short_tidy_unique.csv --proteome human_proteome.csv --rel_widths 4 --width 7
 
 elut_long <- read_csv(args$tidy_psms)
 #proteome <- read_csv(args$proteome)

@@ -142,27 +142,7 @@ meta <- bind_rows(
 ```
 
 
-### Domain coordinate annotations
 
-```{r}
-
-domains_human <- read_delim("/project/cmcwhite/data/exons/data/human_reviewed_accs_interpro.txt", delim ="\t", col_names = c("Entry", "Interpro_ID", "Annotation",  "Source_ID", "ProtBegin", "ProtEnd"))
-domains_pfam_human <- domains_human %>% filter(grepl("^PF", Source_ID))
-
-domains_arath <- read_delim("/project/cmcwhite/data/exons/data/arath_accs_interpro.txt", delim ="\t", col_names = c("Entry", "Interpro_ID", "Annotation",  "Source_ID", "ProtBegin", "ProtEnd"))
-domains_pfam_arath <- domains_arath %>% filter(grepl("^PF", Source_ID))
-
-domains_chlre <- read_delim("/project/cmcwhite/data/exons/data/chlre_accs_interpro.txt", delim ="\t", col_names = c("Entry", "Interpro_ID", "Annotation",  "Source_ID", "ProtBegin", "ProtEnd"))
-domains_pfam_chlre <- domains_chlre %>% filter(grepl("^PF", Source_ID))
-
-domains_pfam <- bind_rows(
-  domains_pfam_human,
-  domains_pfam_arath,
-  domains_pfam_chlre
-)
-
-
-```
 
 
 ### Orthologies for consolidation related proteins across species
@@ -200,6 +180,28 @@ human_w_isoform %>%
 
 # Load domain/disorder coordinate annotations
 ### Downloaded from https://mobidb.org/ browse
+### Domain coordinate annotations
+
+```{r}
+
+domains_human <- read_delim("/project/cmcwhite/data/exons/data/human_reviewed_accs_interpro.txt", delim ="\t", col_names = c("Entry", "Interpro_ID", "Annotation",  "Source_ID", "ProtBegin", "ProtEnd"))
+domains_pfam_human <- domains_human %>% filter(grepl("^PF", Source_ID))
+
+domains_arath <- read_delim("/project/cmcwhite/data/exons/data/arath_accs_interpro.txt", delim ="\t", col_names = c("Entry", "Interpro_ID", "Annotation",  "Source_ID", "ProtBegin", "ProtEnd"))
+domains_pfam_arath <- domains_arath %>% filter(grepl("^PF", Source_ID))
+
+domains_chlre <- read_delim("/project/cmcwhite/data/exons/data/chlre_accs_interpro.txt", delim ="\t", col_names = c("Entry", "Interpro_ID", "Annotation",  "Source_ID", "ProtBegin", "ProtEnd"))
+domains_pfam_chlre <- domains_chlre %>% filter(grepl("^PF", Source_ID))
+
+domains_pfam <- bind_rows(
+  domains_pfam_human,
+  domains_pfam_arath,
+  domains_pfam_chlre
+)
+
+
+```
+
 ```{r}
 
 mobidb_human <- read_delim("/project/cmcwhite/data/exons/data/mobidb_human.txt", delim ="\t") 
@@ -344,10 +346,14 @@ short_tidy_filt %>%
   select(ProteinID) %>%
   unique() %>%
   nrow()
+ short_tidy_filt
+ 
+ short_tidy_filt
+
 ```
 
 
-#### Make small postage stamp plots for visual screening
+# Make small postage stamp plots for visual screening
 Step one for picking out positives
 ```{r}
 
@@ -976,6 +982,7 @@ identified_isoforms  %>% View
 
 
 library(kableExtra)
+
 identified_isoforms_formatted <- identified_isoforms %>% 
 
   select(ProteinID, Terminus = term, Observed = obs_span, Isoform = iso_span, `Isoform ID` = isoforms, `Sequence length` = seqlen, `Observed experiments` = exps) 
@@ -1051,7 +1058,7 @@ fragment_data_terminal_annotated <- fragment_data_terminal %>%
 fragment_data_terminal_annotated %>%
   select(`euNOG ID` = ID, `Truncated proteins in euNOG group` = nprotsingroup, ProteinID, `ProteoformID` = peakid, Category = term, `First observed aa` = nterm_pos, `Last observed aa` = cterm_pos, `Full sequence length` = seqlen,  `In size exclusion` = in_SEC, `In ion exchange` = in_IEX, `First observed peptide`= first_pep,  `Last observed peptide`= last_pep, `Unique peptides` = distinct_peptides, `Candidate Uniprot isoform` = isoforms, `Observed experiments` = exps, `Full domains contained`= Domains, `Interpro domain IDs`= Interpro_IDs ) %>%
   arrange(desc(`Truncated proteins in euNOG group`), `euNOG ID`, ProteinID) %>%
-  write_xlsx("Supplemental_File1.xlsx")
+  write_xlsx("Supplemental_File2.xlsx")
 
 
 
@@ -1181,8 +1188,8 @@ combo_hek %>%
 ```
 
 
-# Figure 4?
-#### Elution plots, individual cases
+# Figure 4
+# Individual elution plots
 ```{r}
 short_tidy_unique_peaks %>% 
     filter(grepl("MTV1_ARATH", ProteinID)) %>% 
@@ -1233,10 +1240,15 @@ quick_plot_elution <- function(ProteinID, short_tidy_unique_peaks){
 
 ```
 
-SF3B1 highlight? Very strong in chlamy, maybe in human
+Preprocess for simplicity in plotting elutions
+```{r}
+preprocess <- short_tidy_unique %>% #_labeled_peaks%>% 
+  separate(ProteinID, into = c(NA, "Entry", "Entry_name"), sep = "[|]", remove = FALSE)
+```
+
 ```{r}
 #elut_viewer("A0A2K3D1T9_CHLRE", short_tidy_unique, domaindis_setup) # IEX and SEC SF3B1
-elut_viewer("SF3B1_HUMAN", short_tidy_unique, domaindis_setup) # IEX and SEC SF3B1
+#elut_viewer("SF3B1_HUMAN", short_tidy_unique, domaindis_setup) # IEX and SEC SF3B1
 #elut_viewer("Q9FMF9_ARATH ", short_tidy_unique, domaindis_setup) # IEX and SEC SF3B1
 
 
@@ -1320,7 +1332,10 @@ preprocess %>%
   filter(Entry_name %in% c("IF2P_HUMAN", "A0A2K3E0D8_CHLRE", "F4I420_ARATH")) %>%
   b_w_plot()
 
-# Just the helical bundle, and just the disordered c-terminus, doesn't go-elute with other eif3s
+
+```
+
+```{r}
 EIF_plots <- preprocess %>%
   filter(Entry_name %in% c("EIF3A_HUMAN", "EIF3B_HUMAN", "EIF3B_ARATH", "EIF3A_ARATH", "A0A2K3CZ51_CHLRE", "EIF3B_ARATH", "EIF3C_ARATH", "EIF3D_ARATH", "EIF3E_ARATH", "EIF3H_ARATH", "EIF3F_ARATH")) %>%
   b_w_plot() 
@@ -1349,7 +1364,7 @@ common_prots  <-
                            "G3BP1_HUMAN",
                            "DDX21_HUMAN",
                            "HNRPM_HUMAN",
-                           "SRRRM2_HUMAN",
+                           "SRRM2_HUMAN",
                            "TCOF_HUMAN",
                            "ACINU_HUMAN",
                            "DDX3X_HUMAN",
@@ -1368,11 +1383,16 @@ common_prots  <-
                            
                            
                            )
-preprocess %>%
+selected_common_ids <- preprocess %>%
   filter(Entry_name %in% common_prots) %>%
-  b_w_plot()
+  pull(ID) %>% unique
 
-# WHERE is ACINU and DDX3X?
+preprocess %>%
+  filter(ID %in% selected_common_ids) %>%
+  select(Entry_name)
+
+
+
 fragment_data %>%
   filter(Entry_name %in% common_prots) %>%
   pull(Entry_name) %>% unique
@@ -1532,7 +1552,7 @@ plot_grid(priority_plot, peptide_stats_plot)
 
 
 
-### Extract out fragment peaks, and do individual correlations
+# Extract out fragment peaks, and do individual correlations
 ```{r}
 
 extra_copd <- tibble(experiment_name = c("HEK_IEX1","HEK_IEX1","HEK_IEX2","HEK_IEX2","HEK_IEX2"), spec = c("human","human","human","human","human"),
@@ -2613,12 +2633,13 @@ short_tidy_unique %>% select(experiment_name) %>%
 
 exp_totals <- short_tidy_unique%>%
   group_by(experiment_name) %>%
-    summarize(exp_totpepcounts = sum(pepcount))
+    summarize(exp_totpepcounts = sum(pepcount), exp_prots = n_distinct(ProteinID))
 
 exp_peptides <- short_tidy_unique %>%
-  select(experiment_name, Peptide) %>%
-  group_by(experiment_name) %>%
-    summarize(exp_totpeptides = n())
+  select(ExperimentID, experiment_name, Peptide, spec) %>%
+  unique() %>%
+  group_by(ExperimentID, experiment_name, spec) %>%
+    summarize(exp_totpeptides = n_distinct(Peptide)) %>% ungroup
 
 tot_positives <- 
   fragment_data_terminal_annot %>%
@@ -2630,7 +2651,9 @@ stats <-
   tot_positives %>%
    full_join(exp_peptides, by = "experiment_name") %>%
    full_join(exp_totals, by = "experiment_name") %>%
-  arrange(numpos)
+  arrange(spec, numpos) 
+
+stats
 
 #palette_OkabeIto_black <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000")
 #colorblocks <- c("#FF0000","#0072B2","#E69F00","#009E24", "#979797","#5530AA", "#111111")
@@ -2674,6 +2697,24 @@ stats_plot %>% ggsave("figures/stats_plot.pdf", ., device = "pdf", width = 3, he
 
 # As peptide detection gets deeper, more proteoforms will be discoverable by this method
 
+
+```
+
+#Supplemental file 1
+```{r}
+# Supplemental File 1
+stats_formatted <- stats %>%
+  filter(experiment_name != "HEKB_SEC1") %>%
+  select(-numpos) %>%
+  select(Species = spec, Name = experiment_name, ID = ExperimentID, Proteins = exp_prots, Peptides = exp_totpeptides, PSMs = exp_totpepcounts) %>%
+  mutate(Species = case_when(Species == "human" ~ "Homo sapiens",
+                             Species == "arath" ~ "Arabidopsis thaliana",
+                             Species == "chlre" ~ "Chlamydomonas reinhardtii"))
+
+stats_formatted %>%
+  
+  write_xlsx("Supplemental_File1.xlsx")
+# Table 1
 
 ```
 
