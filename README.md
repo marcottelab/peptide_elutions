@@ -59,17 +59,21 @@ Expected result:<Enter>
 -make .R file for Line 1097 - Line 1149
 
 ### Visual caterogizing
-***TO-DO***
--clean up elution_viewer.Rmd
 
-Visualize proteins with terminal bias score>2 through a Shiny app
-A section to explain how to look for proteoform visually.
+Visualize proteins with terminal bias score>2 through a Shiny app. The example below demonstrates how to view peptide elution profile for PUR2 from HEK293T cell fractionation.
+	
+Input file 
+1. The same input file as the first step in scoring.
+	
+![alt text](https://user-images.githubusercontent.com/32718019/186778488-8172fdfc-f8d8-400b-89ac-76dec4752308.png) <Enter> 
+	
+2. Domain information
+	
+![alt text](https://user-images.githubusercontent.com/32718019/188288836-550608be-d1a2-405c-982b-19b7508fe2cc.png)
 
+Expected result:<Enter> 
 
-
-for f in data_files/BCM]*elut_long.csv; do echo "Rscript scripts/fit_mixedmodels.R
- --elut_long $f --outfile ${f%.csv}_mixed_models.csv --numgauss 2" ; done > mixed_models_COMMANDS.sh
-
+![My Image](example_files/PUR2_elution_viewer.jpg)
 
 # Peptide identification and formatting
 ## 1) Format result files from MSFragger using format_MSFragger_files.py
