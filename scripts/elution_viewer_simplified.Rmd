@@ -1,0 +1,147 @@
+---
+title: "elution_viewer_simplified"
+author: "Claire McWhite & Momo Sae-Lee"
+date: "2022-09-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+library(shiny)
+library(cowplot)
+library(tidyverse)
+library(ggrepel)
+
+source("/Users/mwsaelee/Desktop/peptide_elutions-master/scripts/theme_utils.R")
+source("/Users/mwsaelee/Desktop/peptide_elutions-master/scripts/saved_ggplots.R")
+short_tidy_unique <- read_csv('/Users/mwsaelee/Desktop/peptide_elutions-master/test/short_tidy_unique_anna_hekSEC2.csv')
+domaindis_setup <- read_delim('/Users/mwsaelee/Desktop/peptide_elutions-master/test/domaindis_setup.txt', delim='\t')
+
+
+elut_viewer <- function(protid, short_tidy_both , domaindis_setup){
+  tester <-short_tidy_both %>%
+  #filter(source == "semienzy") %>%
+  filter(grepl(paste0(protid, "$"), ProteinID)) 
+  tester_domains <- domaindis_setup %>%
+   filter(grepl(paste0(protid, "$"), Entry_name))
+  
+shinyApp(
+ui = basicPage(
+  fluidRow(
+            splitLayout(cellWidths = c("10%", "80%", "10%"),
+            plotOutput("plot0"),
+            plotOutput("plot1", brush = "plot_brush"),
+            plotOutput("plot2")
+  )),
+  fluidRow(
+            splitLayout(cellWidths = c( "35%", "25%", "40%"), cellArgs = list(style="padding: 20px"),     radioButtons("peakid",
+                   label = "Select peakid",
+                   choices = list("1" = 1,"2" = 2,"3" = 3,"4" = 4, "5" = 5, "6" = 6, "7" = 7),
+                   selected = 1,
+                   inline = TRUE),
+    radioButtons("term",
+                   label = "Select terminal",
+                   choices = list("full" = "full","nterm" = "nterm","cterm" = "cterm", "internal" = "internal"),
+                   selected = "full",
+                   inline = TRUE),
+   radioButtons("confidence",
+                   label = "Confidence",
+                   choices = list("low","medium", "high", "very high"),
+                   selected = "very high",
+                   inline = TRUE)
+            )),
+ 
+  fluidRow(
+            splitLayout(cellWidths = c( "30%", "15%", "15%", "20%", "20%"), cellArgs = list(style="padding: 20px"),
+           
+            radioButtons("candidate",
+                   label = "If multiple candidates of same peak",
+                   choices = list("A" = "A","B" = "B","C" = "C" ),
+                   selected = "A",
+                   inline = TRUE),
+            radioButtons("flag_phos",
+                    label = "Flag_phosph",
+                    choices = list("F" = "F", "T" = "T"),
+                    selected = "F",
+                    inline = TRUE
+                         ),
+            radioButtons("flag_frag",
+                    label = "Flag_frag",
+                    choices = list("F" = "F", "T" = "T"),
+                    selected = "F",
+                    inline = TRUE
+                         ),
+             actionButton("doAppendRows","Add selection"),
+             downloadButton('downloadData', 'Download' )
+            )),
+  verbatimTextOutput("info")
+),
+server = function(input, output) {
+  output$plot0 <- renderPlot(({
+    plot_grid(NULL, pepcov_fxn(tester), rel_heights = c(0.1, 1), ncol = 1)
+  }))
+  
+    output$plot1 <- renderPlot({
+    pep_point_fxn(tester, pepmods = FALSE)
+  })
+    
+  output$plot2 <- renderPlot(({
+    plot_domain_dis(tester_domains)
+  }))
+  
+  rv <- reactiveValues(dfnew=NULL)
+  observeEvent(input$doAppendRows,{
+    #dfs <- dfsel()
+    dfs <- brushedPoints(tester, input$plot_brush, xvar = "FractionOrder", yvar = "Peptide") 
+    dfs$peakid <- input$peakid
+    dfs$term <-  input$term
+    dfs$candidate <- input$candidate
+    if(is.null(rv$dfnew)){
+     
+      rv$dfnew <- dfs
+    } else {
+      rv$dfnew <- bind_rows(dfs, rv$dfnew)
+    }
+  })
+  output$downloadData <- downloadHandler(
+    filename = function() {
+       paste('peptcatdata-', protid, '.csv', sep='')
+     },
+     content = function(con) {
+       write_csv(rv$dfnew, con)
+     }
+ )
+  output$info<-renderPrint(rv$dfnew)
+})
+}
+
+#first variable is the protein that you want to inspect
+elut_viewer("PUR2_HUMAN", short_tidy_unique, domaindis_setup)
+
+```
+
+
+
