@@ -124,7 +124,7 @@ server = function(input, output) {
 ```{r}
 
 short_tidy_unique <- read_csv("data_files/short_tidy_unique.csv")
-domaindis_setup <- read_csv("data_files/domaindis_setup.csv")
+domaindis_setup <- read_tsv("data_files/domaindis_setup.txt")
 
 
 elut_viewer("WDR44_HUMAN", short_tidy_unique, domaindis_setup)

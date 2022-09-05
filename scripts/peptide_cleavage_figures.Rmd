@@ -285,6 +285,7 @@ domaindis_setup %>%
 ```{r}
 
 domaindis_setup <- read_tsv("data_files/domaindis_setup.txt")
+
   domain_dis_plot <- domaindis_setup %>%
   filter(Entry_name == "WDR44_HUMAN") %>%
     mutate(label = str_replace(Entry_name, "_", "\n")) %>%
