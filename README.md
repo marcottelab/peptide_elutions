@@ -62,10 +62,12 @@ Input file
 1.peptide file (Same as input file for Gaussian fitting step)
 
 Input file: <Enter> 
+	
 ![alt text](https://user-images.githubusercontent.com/32718019/186778488-8172fdfc-f8d8-400b-89ac-76dec4752308.png) <Enter> 
 
 2.peak file (From previous Gaussian fitting step)
-![alt text](https://user-images.githubusercontent.com/32718019/188720024-1042e604-4b0c-4722-9051-d71f275beba6.png)
+	
+![alt text](https://user-images.githubusercontent.com/32718019/186778945-6d2824fb-8350-4787-825d-6908834f9f9a.png)
 
 Example code: Rscript-4.0.3 scripts/terminal_bias_fix2.R --input_file /test/short_tidy_unique_anna_hekSEC2_78.csv --peaks /peaks_short_tidy_unique_anna_hekSEC2_78.csv --output_file /test/terminal_bias_short_tidy_unique_anna_hekSEC2_78.csv <Enter>
 
