@@ -42,7 +42,7 @@ Expected result:<Enter>
 
 
 ### Scoring
-1. Idenitfy peaks from peptide elution profile of each protein in a fractionation experiment using Gaussian Mixture Model. Multiple peaks suggest the existence of proteoforms or intact proteins eluting with different binding partners. <Enter> 
+**1. Idenitfy peaks from peptide elution profile of each protein in a fractionation experiment using Gaussian Mixture Model. Multiple peaks suggest the existence of proteoforms or intact proteins eluting with different binding partners.** <Enter> 
 	
 Script: Gaussian_fitting.R <Enter> 
 	
@@ -55,7 +55,7 @@ Expected result:<Enter>
 	
 ![alt text](https://user-images.githubusercontent.com/32718019/186778945-6d2824fb-8350-4787-825d-6908834f9f9a.png)
 
-2. Calculate terminal bias score in order to prioritize proteins to inspect manually.
+**2. Calculate terminal bias score in order to prioritize proteins to inspect manually.**
 
 Input file 
 
