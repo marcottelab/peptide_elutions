@@ -150,7 +150,53 @@ bps <- short_tidy_unique_peaks_expanded_fragments %>%
   split(list(.$ProteinID, .$experiment_name, .$peak)) %>%
   future_map_dfr(~possibly_get_bps(.))
 
+# Get which peptides were observed in each peak
+obs_key <- short_tidy_unique_peaks_expanded_fragments %>%
+  select(ProteinID, experiment_name, peak, Start, presence) %>% unique
 
-print("writing result file")
-bps %>% write_csv(args$output_file)
+# Need to get either next observed peptide past peak for C-terminal fragment 
+# or previous observed pepide prior to peak for N-terminal fragment
+bps_identified <- bps %>%
+  group_by(ProteinID, experiment_name, peak) %>%
+  filter(abs_log2fc == max(abs_log2fc))%>% data.frame() %>%
+  
+  left_join(obs_key, by = c("ProteinID", "experiment_name", "peak")) %>%
+  arrange(Start) %>%
+  filter(presence == "observed") %>%
+  mutate(diff = Start - bp_start) %>% 
+  mutate(remove_flag = case_when(log2fc > 0 & diff >0  ~ TRUE, # Only look to left of N-term frag
+                                 
+                                 log2fc < 0 & diff < 0 ~ TRUE,
+                                 TRUE ~ FALSE
+  )) %>% #Only look toward C-terminal for C-term frag
+  filter(remove_flag != TRUE) %>%
+  filter(diff !=0) %>% # Always offset by 1 
+  arrange(diff ) %>%
+  group_by(ProteinID, experiment_name, peak) %>%
+  mutate(terminal = case_when(log2fc > 0 ~ "nterm",
+                              log2fc < 0 ~ "cterm")) %>%
+  mutate(actual_terminal_peptide = case_when(log2fc > 0 & diff == max(diff) ~ Start,
+                                             
+                                             log2fc < 0 & diff == min(diff) ~ Start)) %>%
+  filter(!is.na(actual_terminal_peptide)) %>%
+  
+  # Fragments must contain at least 3 peptides. Missing ends must contain at least 3 peptides
+  # Hasn't been calibrated except for nterm and missing c term
+  mutate(toosmallfrag=  case_when(
+    terminal == "nterm" & observed_nterm <= 3 ~ "toosmall", # Actually only 2 observed
+    terminal == "cterm" & observed_cterm <= 4 ~ "toosmall",# Actually only 2 observed
+    terminal == "nterm" & missing_cterm <= 3 ~ "toosmall", # Actually missing 2 peptides
+    terminal == "cterm" & missing_nterm < 3 ~ "toosmall",
+    TRUE  ~ "fine"
+    
+  )) %>%
+  filter(toosmallfrag == "fine") %>%
+  select(-toosmallfrag) %>% 
+  unique %>%
+  ungroup
+
+print("Writing output file")
+bps_identified %>%
+  write_csv(args$output_file)
+
 

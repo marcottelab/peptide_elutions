@@ -729,7 +729,7 @@ get_bps <- function(oneexp){
 
 
     fragments <- bind_rows(n_fragments, c_fragments) %>%
-            mutate_at(vars(contains("term")), replace_na, 1) 
+            mutate_at(vars(matches("[nc]term")), replace_na, 1) 
     
   
     fragments <- fragments %>%
