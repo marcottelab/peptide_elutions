@@ -145,7 +145,6 @@ short_tidy_unique_peaks_expanded_fragments  <- short_tidy_unique_peaks_expanded 
   semi_join(enough_cov_peaks, by = c("ProteinID", "peak", "experiment_name"))
 
 bps <- short_tidy_unique_peaks_expanded_fragments %>%
-  filter(grepl("UBA6_H", ProteinID)) %>%
   arrange(Start, End)%>%
   split(list(.$ProteinID, .$experiment_name, .$peak)) %>%
   future_map_dfr(~possibly_get_bps(.))
