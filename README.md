@@ -72,6 +72,7 @@ Input file: <Enter>
 Example code: Rscript-4.0.3 scripts/terminal_bias_fix2.R --input_file /test/short_tidy_unique_anna_hekSEC2_78.csv --peaks /peaks_short_tidy_unique_anna_hekSEC2_78.csv --output_file /test/terminal_bias_short_tidy_unique_anna_hekSEC2_78.csv <Enter>
 
 Expected result:<Enter> 
+![alt text](https://user-images.githubusercontent.com/32718019/189236527-15524bef-9682-4d47-a436-69203dcd0a1f.png)
 
 
 
