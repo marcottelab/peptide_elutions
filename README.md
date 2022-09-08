@@ -42,7 +42,7 @@ Expected result:<Enter>
 
 
 ### Scoring
-**1. Idenitfy peaks from peptide elution profile of each protein in a fractionation experiment using Gaussian Mixture Model. Multiple peaks suggest the existence of proteoforms or intact proteins eluting with different binding partners.** <Enter> 
+**1. Identify peaks from peptide elution profile of each protein in a fractionation experiment using Gaussian Mixture Model. Multiple peaks suggest the existence of proteoforms or intact proteins eluting with different binding partners.** <Enter> 
 	
 Script: Gaussian_fitting.R <Enter> 
 	
@@ -75,7 +75,7 @@ Expected result:<Enter>
 
 
 
-### Visual caterogizing
+### Visual categorizing
 
 Visualize proteins with terminal bias score>2 through a Shiny app. The example below demonstrates how to view peptide elution profile for PUR2 from HEK293T cell fractionation.
 	
