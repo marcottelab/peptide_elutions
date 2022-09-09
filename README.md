@@ -74,7 +74,9 @@ Example code: Rscript-4.0.3 scripts/terminal_bias_fix2.R --input_file /test/shor
 Expected result:<Enter> 
 ![alt text](https://user-images.githubusercontent.com/32718019/189236527-15524bef-9682-4d47-a436-69203dcd0a1f.png)
 
+This example shows the terminal bias score (abslog2fc) for each Gaussian peaks for PUR2 (see Figure 4A in the manuscript). The higher score suggests the existence of the proteoform, but would require further manual inspection. Terminal bias score is used to narrow down the list of proteins to inspect manually.
 
+![My Image](example_files/tb_dist.png)
 
 ### Visual categorizing
 
