@@ -37,7 +37,7 @@ library(ggrepel)
 
 source("/Users/mwsaelee/Desktop/peptide_elutions-master/scripts/theme_utils.R")
 source("/Users/mwsaelee/Desktop/peptide_elutions-master/scripts/saved_ggplots.R")
-short_tidy_unique <- read_csv('/Users/mwsaelee/Desktop/peptide_elutions-master/test/short_tidy_unique_anna_hekSEC2.csv')
+short_tidy_unique <- read_csv('/Users/mwsaelee/Desktop/peptide_elutions-master/test/short_tidy_unique_anna_hekSEC1.csv')
 domaindis_setup <- read_delim('/Users/mwsaelee/Desktop/peptide_elutions-master/test/domaindis_setup.txt', delim='\t')
 
 
