@@ -82,7 +82,7 @@ For example, this histogram shows the distribution of terminal bias scores for t
 
 ### Visual categorizing
 
-Visualize proteins with terminal bias score>2 through a Shiny app. The example below demonstrates how to view peptide elution profile for PUR2 from HEK293T cell fractionation.
+Visualize proteins through a Shiny app. The example below demonstrates how to view peptide elution profile for PUR2 from HEK293T cell fractionation.
 	
 Input file 
 1. The same input file as the first step in scoring.
