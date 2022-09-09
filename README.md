@@ -96,3 +96,13 @@ Input file
 Expected result:<Enter> 
 
 ![My Image](example_files/PUR2_elution_viewer.png)
+
+In order to identify the breakpoint for the proteoform and inspect the peptides observed for a particular proteoform further, you can highlight the peptides of interest in the Shiny app as shown below:
+
+![My Image](example_files/PUR2_elut_viewer_zoom.png)
+
+
+The information on peptides can be exported from the Shiny app. By looking at the last observed peptide for a proteoform, you can identify the breakpoint for the proteoform. For this PUR2 proteoform, the break point is residue 433. 
+
+![image](https://user-images.githubusercontent.com/32718019/189445819-22f64d2d-ee79-4d26-8383-92862f4d10a7.png)
+
