@@ -69,7 +69,7 @@ Input file: <Enter>
 	
 ![alt text](https://user-images.githubusercontent.com/32718019/186778945-6d2824fb-8350-4787-825d-6908834f9f9a.png)
 
-Example code: Rscript-4.0.3 scripts/terminal_bias_fix2.R --input_file /test/short_tidy_unique_anna_hekSEC2_78.csv --peaks /peaks_short_tidy_unique_anna_hekSEC2_78.csv --output_file /test/terminal_bias_short_tidy_unique_anna_hekSEC2_78.csv <Enter>
+Example code: Rscript-4.0.3 /scripts/terminal_bias.R --input_file /test/short_tidy_unique_anna_hekSEC2_78.csv --peaks /peaks_short_tidy_unique_anna_hekSEC2_78.csv --output_file /test/terminal_bias_short_tidy_unique_anna_hekSEC2_78.csv <Enter>
 
 Expected result:<Enter> 
 ![alt text](https://user-images.githubusercontent.com/32718019/189236527-15524bef-9682-4d47-a436-69203dcd0a1f.png)
@@ -82,7 +82,7 @@ For example, this histogram shows the distribution of terminal bias scores for t
 
 ### Visual categorizing
 
-Visualize proteins through a Shiny app. The example below demonstrates how to view peptide elution profile for PUR2 from HEK293T cell fractionation.
+Visualize proteins through a Shiny app. The example below demonstrates how to view peptide elution profile for PUR2 from HEK293T cell fractionation. Run elution_viewer_simplified.Rmd in Rstudio.
 	
 Input file 
 1. The same input file as the first step in scoring.
@@ -90,6 +90,8 @@ Input file
 ![alt text](https://user-images.githubusercontent.com/32718019/186778488-8172fdfc-f8d8-400b-89ac-76dec4752308.png) <Enter> 
 	
 2. Domain information
+
+Information on domains were taken from Interpro (https://www.ebi.ac.uk/interpro/) and MobiDB (https://mobidb.bio.unipd.it/). The format of the input table for peptide_elution viewer is shown below. For convenience, we provide domain information files fro human, Arabidopsis, and Chlamydomonas in data_files (domaindis_setup.txt).
 	
 ![alt text](https://user-images.githubusercontent.com/32718019/188288836-550608be-d1a2-405c-982b-19b7508fe2cc.png)
 
