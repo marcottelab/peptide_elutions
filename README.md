@@ -95,4 +95,4 @@ Input file
 
 Expected result:<Enter> 
 
-![My Image](example_files/PUR2_elution_viewer.jpg)
+![My Image](example_files/PUR2_elution_viewer.jg)
