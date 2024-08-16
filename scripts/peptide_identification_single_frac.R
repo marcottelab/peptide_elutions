@@ -30,7 +30,7 @@ args = parser$parse_args()
 elut_wide <- read_delim(args$elut_wide_file,  delim = ",") 
 fraction_order <- read_delim(args$fraction_order,  delim = ",")
 peps <- read_delim(args$peps,  delim = ",")
-
+col_name <- unlist(strsplit(fraction_order$FractionID[1], split = '_' ))[1]
 
 print("Identify peptides")
 elut_wide_identified <- elut_wide %>%
@@ -45,7 +45,7 @@ proteins_w_unique_peps <- elut_wide_identified %>%
 
 print("Convert wide to tidy")
 elut_long <- elut_wide_identified %>%
-  pivot_longer(cols = starts_with("MB_Sup_HSA"),
+  pivot_longer(cols = starts_with(col_name),
                names_to = "FractionID",
                values_to = "pepcount") %>%
   mutate(pepcount = as.numeric(pepcount)) %>%
