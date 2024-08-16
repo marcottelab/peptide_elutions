@@ -1,25 +1,34 @@
+print("what")
 library(tidyverse)
-library(argparse)
+#library(argparse)
 library(furrr)
 library(purrr)
 library(future)
-library(argparse)
+#library(argparse)
+
+print("is this happening?")
 plan("multisession")
 #This script is used to calculate terminal bias score for each protein in a fractionation experiment. Only works with R>4.0.
 
-parser <- ArgumentParser(description='Calculate terminal bias score for each protein')
+# Parse arguments, Argparse will not work anymore, changing to commandArgs
+args <- commandArgs(trailingOnly = TRUE)
+input_file <- args[1]
+peaks <- args[2]
+output_file <- args[3]
 
-parser$add_argument('--input_file', dest='input_file', action='store', required=TRUE,
-    help='input file from peptide_identification.R')
+#parser <- ArgumentParser(description='Calculate terminal bias score for each protein')
 
-parser$add_argument('--peaks', dest='peaks', action='store', required=TRUE,
-    help='file containing peaks from Gaussian_fitting.R')
+#parser$add_argument('--input_file', dest='input_file', action='store', required=TRUE,
+#    help='input file from peptide_identification.R')
 
-parser$add_argument('--output_file', dest='output_file', action='store', required=TRUE,
-    help='output file ****add more info here*****')
+#parser$add_argument('--peaks', dest='peaks', action='store', required=TRUE,
+#    help='file containing peaks from Gaussian_fitting.R')
+
+#parser$add_argument('--output_file', dest='output_file', action='store', required=TRUE,
+#    help='output file ****add more info here*****')
 
 
-args = parser$parse_args()
+#args = parser$parse_args()
 
 get_terminal_ranges <- function(oneexp){
   firstobs <- oneexp %>%
@@ -96,10 +105,9 @@ possibly_get_bps <- possibly(get_bps, otherwise = data.frame())
 
 
 
-
 print("load input file")
-short_tidy_unique <- read_csv(args$input_file)
-peaks  <- read_csv(args$peaks)
+short_tidy_unique <- read_csv(input_file)
+peaks  <- read_csv(peaks)
 
 #Calculate for terminal bias 
 
@@ -196,6 +204,6 @@ bps_identified <- bps %>%
 
 print("Writing output file")
 bps_identified %>%
-  write_csv(args$output_file)
+  write_csv(output_file)
 
 

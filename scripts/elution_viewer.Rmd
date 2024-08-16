@@ -656,6 +656,89 @@ elut_viewer("RD23A_HUMAN", short_tidy_unique, domaindis_setup) # potentially mis
 #elut_viewer("RHG01_HUMAN", short_tidy_unique, domaindis_setup) #
 #elut_viewer("TC159_ARATH", short_tidy_unique, domaindis_setup) # W and w/o membrane anchor
 #elut_viewer("I1KXC0_SOYBN", short_tidy_unique, domaindis_setup) # skipped unclear
+
+### FISHER ADDITIONS
+#elut_viewer('A0A2K3DN68_CHLRE', short_tidy_unique, domaindis_setup) # IEX only
+#elut_viewer('A0A2K3DWN1_CHLRE', short_tidy_unique, domaindis_setup) # Not very abundant
+#elut_viewer('K22E_HUMAN', short_tidy_unique, domaindis_setup)  # unclear
+#elut_viewer('6PGD_HUMAN', short_tidy_unique, domaindis_setup) # unclear
+#elut_viewer('IF4G1_HUMAN', short_tidy_unique, domaindis_setup) # based  on abundance
+#elut_viewer('A8JHX9_CHLRE', short_tidy_unique, domaindis_setup) # Very clear N-term made of the First 3 domains of EFG (not the last two)
+elut_viewer('A8ISZ1_CHLRE', short_tidy_unique, domaindis_setup) # N term disordered
+elut_viewer('CHRD1_HUMAN', short_tidy_unique, domaindis_setup) # unclear, low abundance
+elut_viewer('IMB1_HUMAN', short_tidy_unique, domaindis_setup) # Unclear
+elut_viewer('IDE_HUMAN', short_tidy_unique, domaindis_setup) # Nothing
+elut_viewer('UBP5_HUMAN', short_tidy_unique, domaindis_setup) # Nothing
+elut_viewer('PHB_HUMAN', short_tidy_unique, domaindis_setup) # Not clear
+elut_viewer('K2C1_HUMAN', short_tidy_unique, domaindis_setup) # Looks poorly observable at the C-terminus
+elut_viewer('ICAL_HUMAN', short_tidy_unique, domaindis_setup) # This is calpastatin, prioritzed by tb_bias, just didn't save the manual annotation
+elut_viewer('A8J503_CHLRE', short_tidy_unique, domaindis_setup) # Just poorly observable C
+elut_viewer('PRP19_HUMAN', short_tidy_unique, domaindis_setup) # Nothing
+elut_viewer('LA_HUMAN', short_tidy_unique, domaindis_setup) # This one is very clear, just below tb_bias cutoff
+elut_viewer('CTND1_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('A0A2K3CS00_CHLRE', short_tidy_unique, domaindis_setup)
+elut_viewer('SART3_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('UBA1_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('FUBP2_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('CHD4_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('SART3_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('GLGS_ARATH', short_tidy_unique, domaindis_setup)
+elut_viewer('6PGD_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('VATB2_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('TLN1_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('IF4G1_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('CLH1_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('A8I8A3_CHLRE', short_tidy_unique, domaindis_setup)
+elut_viewer('ATPB_CHLRE', short_tidy_unique, domaindis_setup)
+elut_viewer('IMB1_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('VIGLN_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('A0A2K3DTD5_CHLRE', short_tidy_unique, domaindis_setup)
+elut_viewer('NSF1C_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('EF2_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('ENOA_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('NCKP1_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('PSA3_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('K1C9_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('CKAP5_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('OTU1_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('EMAL4_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('GLRX3_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('A0A2K3DLZ7_CHLRE', short_tidy_unique, domaindis_setup)
+elut_viewer('SYQ_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('MOES_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('HSP7C_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('ALBU_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('ACLY_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('ODPA_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('A8IL08_CHLRE', short_tidy_unique, domaindis_setup)
+elut_viewer('IMB1_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('6PGD_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('RNZ2_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('IQGA1_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('VINC_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('THIL_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('MYH9_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('FLNB_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('PSA3_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('ACLY_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('EF2_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('PSA1_HUMAN', short_tidy_unique, domaindis_setup)
+elut_viewer('PSA6_HUMAN', short_tidy_unique, domaindis_setup)
+### END FISHER ADDITIONS
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 elut_viewer("A0A2K3CN56_CHLRE", short_tidy_unique, domaindis_setup) #
 elut_viewer("A0A2K3DMQ6_CHLRE", short_tidy_unique, domaindis_setup) #
 elut_viewer("A0A2K3E1E8_CHLRE", short_tidy_unique, domaindis_setup) #

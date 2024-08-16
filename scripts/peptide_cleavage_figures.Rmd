@@ -1,4 +1,4 @@
---
+---
 title: "Peptide_cleavage_data_analysis"
 output: html_document
 ---
@@ -16,7 +16,7 @@ library(cowplot)
 library(broom)
 library(patchwork)
 library(ggridges)
-library(seqinr)
+#library(seqinr) # Not working on marccomp?
 library(future)
 library(furrr)
 library(plotly)
@@ -30,6 +30,34 @@ theme_set(theme_cowplot_consistent_text(font_size = 8))
 palette <- rep(c("#0072B2","#E69F00","#009E24","#FF0000", "#979797","#5530AA"), 8)
 ```
 
+
+Files made in this script (for making figures without have to rerun things)
+```{r}
+
+
+
+short_tidy_unique <- read_csv("data_files/short_tidy_unique.csv")
+peaks <- read_csv("/project/cmcwhite/data/peptide_elutions/peaks_rms.csv")
+bps_identified <-  read_csv("data/bps_identified.csv")
+fragment_data_terminal <- read_csv("/project/cmcwhite/data/fragment_data_terminal.csv")
+
+
+
+human_proteome <- read_csv("data_files/human_proteome.csv")
+arath_proteome <- read_csv("data_files/arath_proteome.csv")
+chlre_proteome <- read_csv("data_files/chlre_proteome.csv")
+meta <- read_csv("/project/cmcwhite/data/peptide_elutions/annotation_files/meta.csv") 
+domains_pfam <- read_csv("/project/cmcwhite/data/peptide_elutions/annotation_files/domains_pfam.csv")
+orthologies <- read_csv("/project/cmcwhite/data/peptide_elutions/orthologies.csv")
+domaindis_setup <- read_tsv("data_files/domaindis_setup.txt")
+
+
+labels <- read_csv("labels.csv")
+
+
+
+
+```
 
 
 # Load and format proteomics data
@@ -88,6 +116,7 @@ short_tidy_unique <- short_tidy_filt %>%
   filter(status == "protein_unique") %>% select(-filename, -status)
 short_tidy_unique %>% write_csv("data_files/short_tidy_unique.csv")
 
+short_tidy_unique <- read_csv("data_files/short_tidy_unique.csv")
 ```
 
 
@@ -139,6 +168,8 @@ meta <- bind_rows(
   chlre_meta
 ) 
 
+meta %>% write_csv("/project/cmcwhite/data/peptide_elutions/data_files/meta.csv") 
+
 ```
 
 
@@ -156,6 +187,8 @@ orthologies <-
   bind_rows(human_orthology,
             arath_orthology,
             chlre_orthology)
+
+orthologies %>% write_csv("/project/cmcwhite/data/peptide_elutions/orthologies.csv")
 ```
 
 
@@ -199,6 +232,7 @@ domains_pfam <- bind_rows(
   domains_pfam_chlre
 )
 
+domains_pfam %>% write_csv("/project/cmcwhite/data/peptide_elutions/annotation_files/domains_pfam.csv")
 
 ```
 
@@ -255,6 +289,9 @@ domaindis_setup <-
 
 domaindis_setup %>%
   write_tsv("data_files/domaindis_setup.txt")
+
+domaindis_setup <-
+  read_tsv("data_files/domaindis_setup.txt")
 
 domaindis_setup
 domaindis_setup %>%
@@ -444,6 +481,7 @@ positives_train %>% filter(grepl("TSS", ProteinID))
 positives_train %>% filter(grepl("VILI4", ProteinID))
 
 
+
 negatives <- short_tidy  %>%
     
     filter(!ProteinID %in% positives$ProteinID) %>%
@@ -462,6 +500,47 @@ negatives_validate <- negatives  %>%
   mutate(set = "val")
 
 
+#Alternative negatives 
+
+pos_stats <- positives %>%
+  left_join(peptide_stats, by = c("ProteinID", "experiment_name")) %>%
+  select(ProteinID, experiment_name, num_counts) %>% mutate(label = "pos") 
+  
+
+neg_stats <- peptide_stats %>%
+  select(ProteinID, experiment_name, num_counts) %>%
+    filter(!ProteinID %in% positives$ProteinID) %>%
+    mutate(label = "neg")  
+both_stats <- neg_stats %>%
+  bind_rows(pos_stats) %>%
+  filter(experiment_name != "HEKB_SEC1") %>%
+  mutate(quantile = ntile(num_counts, 100))
+
+pos_stats_w_ntile <- both_stats %>% filter(label == "pos")
+neg_stats_w_ntile <- both_stats %>% filter(label == "neg")
+
+alt_negatives <-pos_stats_w_ntile %>% left_join(neg_stats_w_ntile, by = c("quantile", "experiment_name"), suffix = c("_pos", "_neg"), multiple = "all") %>%
+  group_by(ProteinID_pos, experiment_name) %>%
+  slice(1) %>%
+  ungroup %>%
+  select(ProteinID = ProteinID_neg, experiment_name) %>% mutate(label = "neg")
+
+
+
+
+alt_labels <- bind_rows(alt_negatives, positives)
+
+
+negatives_train <- negatives %>%
+   head(500) %>%
+   mutate(set ="train")
+
+negatives_validate <- negatives  %>%
+  tail(500) %>%
+  mutate(set = "val")
+
+
+
 #negatives_train %>%
 #  write_csv("data_files/negative_train.csv")
 #negatives_validate %>%
@@ -469,10 +548,9 @@ negatives_validate <- negatives  %>%
 
 
 labels <- bind_rows(
-  positives_train,
-  positives_validate,
-  negatives_train,
-  negatives_validate
+  positives,#_train,
+ # positives_validate,
+  negatives
 )
 
 
@@ -666,13 +744,18 @@ short_tidy_unique_peaks_expanded_fragments  <- short_tidy_unique_peaks_expanded 
 short_tidy_unique_peaks_expanded_fragments  %>%
   write_csv("data/short_tidy_unique_peaks_expanded_fragments.csv")
 
+
+short_tidy_unique_peaks_expanded_fragments <- read_csv("data/short_tidy_unique_peaks_expanded_fragments.csv")
 ```
 
 # Part 2: Calculate terminal bias
 Calculation observable N -> C
                            N - > Observable C
 ### Calibrating terminal scores
+# This is done with terminal bias.R
 ```{r}
+
+
 oneexp <- short_tidy_unique_fragments %>%
   filter(grepl("VILI4_ARATH", ProteinID)) %>% 
   filter(experiment_name == "ARATH_SEC1") %>%
@@ -750,11 +833,6 @@ get_bps <- function(oneexp){
 possibly_get_bps <- possibly(get_bps, otherwise = data.frame())
 
 bps <- short_tidy_unique_peaks_expanded_fragments %>%
-  #filter(grepl("VILI4_ARATH", ProteinID)) %>%
-  #filter(experiment_name == "ARATH_SEC1") %>%
-  #filter(grepl("Y4554_ARATH", ProteinID)) %>% 
-  #filter(experiment_name == "ARATH_IEX1") %>%
-
   
   arrange(Start, End)%>%
   split(list(.$ProteinID, .$experiment_name, .$peak)) %>%
@@ -777,6 +855,9 @@ obs_key <- short_tidy_unique_peaks_expanded_fragments %>%
 
 # Need to get either next observed peptide past peak for C-terminal fragment 
 # or previous observed pepide prior to peak for N-terminal fragment
+
+
+
 bps_identified <- bps %>%
   group_by(ProteinID, experiment_name, peak) %>%
       filter(abs_log2fc == max(abs_log2fc))%>% data.frame() %>%
@@ -827,9 +908,138 @@ bps_identified <-
 
 
 
-# Part 3: Curating proteins with high terminal bias
+# START of Fisher's exact section
+
+```{r}
+# Get the end of each peptide as a candidate breakpoint to scan with Fisher's exact test
+breakpoints <- short_tidy_unique_peaks_expanded_fragments %>% select(ProteinID, End) %>% unique() %>% rename(midpoint = End)
+```
+
+
+
+# Create a contingency table based on each of the candidate breakpoints in the peak
+```{r}
+# Max size of contingency_full is num_midpoints * numpeaks * numprots * 4 
+# Nterm obs, Nterm missed, Cterm obs, Cterm missed
+contingency_full_step1 <- short_tidy_unique_peaks_expanded_fragments %>% 
+  left_join(breakpoints) %>%
+  mutate(pep_half = if_else(End <= midpoint, "firsthalf", "secondhalf")) %>%
+  select(ProteinID, Peptide, experiment_name, peak, pep_half, presence, midpoint) %>%
+  group_by(ProteinID, experiment_name, peak, pep_half, presence, midpoint) %>%
+    summarize(n = n()) #%>%
+```
+
+```{r}
+
+all_combinations_fixed <-  contingency_full_step1 %>%
+  group_by(ProteinID, peak, midpoint, experiment_name) %>%
+    complete( pep_half = c("firsthalf", "secondhalf"), presence = c("missing", "observed"), fill = list(n = 0))
+
+
+all_combinations_fixed %>% write_csv("all_combinations_fixed.csv")
+contingency_full <- all_combinations_fixed
+
+
+all_combinations_fixed %>% select(experiment_name) %>% pull() %>% unique
+
+```
+
+
+```{r}
+
+# Create the folder if it doesn't exist
+dir.create("all_combinations_fixed", showWarnings = FALSE)
+
+# Split the dataset by 'experiment_name' and write each to a CSV
+all_combinations_fixed %>%
+  group_by(experiment_name) %>%
+  group_split() %>%
+  purrr::walk(~write_csv(.x, file = paste0("all_combinations_fixed/", .x$experiment_name[1], ".csv")))
+
+
+# Here run scripts/fisher.R input.csv output.csv
+
+# List all output CSV files
+output_files <- list.files(path = "all_combinations_fixed/", pattern = "output.*.csv", full.names = TRUE)
+
+# Read all files and combine them
+fisher_output_full <- output_files %>%
+  purrr::map_dfr(read_csv)
+
+# Save the combined result
+write_csv(fisher_output_full, "fisher_output_full_combined.csv")
+
+# At this point, in all_combinations_fixed/, we have a p.value for every potential breakpoint. 
+# Now do we need to find the lowest p-value and compare it to our custom score at each potential breakpoint. 
+
+```
+
+
+
+```{r}
+# First do peak-wise BH, then pick the minimum of that to prioritize protein
+# Then for the annotation step later, can take a hand annotated peak, and calculate the same BH score and the terminal bias score
+
+fisher_output_full_bh <- fisher_output_full %>%
+  group_by(ProteinID, experiment_name, peak) %>%
+     mutate(peaklevel_p_value_bh = p.adjust(p.value, method = "BH")) %>%
+  ungroup()
+
+fisher_output_summary <- fisher_output_full_bh %>% 
+    group_by(ProteinID) %>%
+     
+     slice_min(peaklevel_p_value_bh, n = 1) %>%
+  rename(min_protlevel_p_value_bh = peaklevel_p_value_bh) %>%
+  ungroup() %>%
+   arrange(min_protlevel_p_value_bh) %>%
+  mutate(
+    #p_value_bonferroni = p.adjust(min_protlevel_p_value_bh, method = "bonferroni"),
+    p_value_bh = p.adjust(min_protlevel_p_value_bh, method = "BH") # Benjamini-Hochberg
+  ) %>%
+  ungroup() %>%
+  unique()%>%
+  mutate(min_p_value = min_protlevel_p_value_bh) # Not using second BH 
+
+```
+
+
+
+# Part 3: Curating proteins with high terminal bias or fisher's p-value
 #### Select proteins with high terminal bias, then confirm with elution_viewer.Rmd
 ```{r}
+fisher_ranking <- fisher_output_summary %>%
+  arrange(p_value_bh) %>%
+  rowid_to_column(var = "fisher_rank")%>%
+  mutate(prioritized_fisher = case_when(-log10(p_value_bh) >= 6 ~ TRUE, TRUE ~ FALSE))
+
+
+tb_ranking <- scored_labeled_all %>%
+  arrange(desc(max_abs_log2fc)) %>%
+  rowid_to_column(var = "tb_rank") %>%
+  mutate(prioritized_tb = case_when(max_abs_log2fc >= 3 ~ TRUE, TRUE ~ FALSE))
+
+combined_ranking <- tb_ranking %>%
+  inner_join(fisher_ranking) %>%
+  mutate(prioritized = case_when(prioritized_tb == TRUE & prioritized_fisher == TRUE ~ "BOTH",
+                                 prioritized_tb == TRUE ~ "Terminal bias",
+                                 prioritized_fisher == TRUE ~ "Fisher"))
+
+combined_ranking %>%
+  
+  ggplot(aes(x = fisher_rank, y = tb_rank, color = prioritized)) +
+  geom_point(alpha = 0.7) +
+  scale_x_log10()
+
+combined_ranking %>%
+  left_join(labels) %>%
+  ggplot(aes(x = fisher_rank, y = tb_rank, color = prioritized)) +
+  geom_point(alpha = 0.7) +
+  scale_x_log10() +
+  facet_wrap(~label)
+
+
+# Prioritized proteins based on the max abs log2fc. 
+# 
 priority <- bps_identified %>% 
   separate(ProteinID, into =c(NA, NA, "Entry_name"), sep = "[|]") %>% 
   
@@ -843,25 +1053,215 @@ priority <- bps_identified %>%
   arrange(desc(max_abs_log2fc ))
 
 more <- priority %>%
-  filter(!Entry_name %in% x) %>%
+  filter(!Entry_name %in% x) 
   
+  
+combined_ranking %>% filter(prioritized_fisher == TRUE) %>%
+  filter(prioritized_tb == FALSE) %>%
+  filter(!ProteinID %in% prioritized_tb) %>%
+  filter(!ProteinID %in% fragment_data$ProteinID) %>%
+  select(ProteinID) %>% unique()
+  
+  
+combined_ranking %>%
+  select(ProteinID, prioritized_fisher, prioritized_tb) %>%
+  unique() %>%
+  group_by(prioritized_fisher, prioritized_tb) %>%
+     summarize(n = n())
 
+### How did ICAL end up on this list?
+fisher_prioritized_entries <- combined_ranking %>% filter(prioritized_fisher == TRUE) %>%
+  filter(prioritized_tb == FALSE) %>% View()
+  filter(!ProteinID %in% prioritized_tb) %>%
+  filter(!ProteinID %in% fragment_data$ProteinID) %>%
+  select(ProteinID) %>% unique() %>% 
+   separate(ProteinID, into = c("tmp", "Entry", "Entry_name"), sep = "[|]") %>% pull(Entry_name)
+
+fisher_prioritized_entries
+   
+for(x in fisher_prioritized_entries) {
+  cat(sprintf("elut_viewer('%s', short_tidy_unique, domaindis_setup)\n", x))
+}
+
+
+  
+for(x in fisher_prioritized_entries) {
+  cat(print(x))
+}
+
+
+  
+  
 ```
 
-
+### Using the scores to prioritize proteins to screen visually
+### The additional fisher score adds on 7 proteins with fragments
 ### Classified fragments from elution viewer
 ```{r}
-data_path = "/project/cmcwhite/data/peptide_elutions/fragment_categorizing/"
-fragment_files <- dir(data_path, pattern = "*csv") 
+data_path_tb = "/project/cmcwhite/data/peptide_elutions/fragment_categorizing_tb/"
+fragment_files_tb <- dir(data_path_tb, pattern = "*csv") 
 
-fragment_data <- tibble(filename_proc = fragment_files) %>%
-               mutate(file_contents = map(filename_proc, ~ read_csv(file.path(data_path, .)))) %>%
-               unnest(cols = c(file_contents))
+fragment_data_tb <- tibble(filename_proc = fragment_files_tb) %>%
+               mutate(file_contents = map(filename_proc, ~ read_csv(file.path(data_path_tb, .)))) %>%
+               unnest(cols = c(file_contents)) %>%
+               mutate(from = "tb")
 
-fragment_data <- fragment_data %>% select(-source, -hyperscore)
-fragment_data <- fragment_data %>% unique() # sometimes clicked twice
+fragment_data_tb <- fragment_data_tb %>% select(-source, -hyperscore)
+fragment_data_tb <- fragment_data_tb %>% unique() # sometimes clicked twice
+
+data_path_fisher = "/project/cmcwhite/data/peptide_elutions/fragment_categorizing_fisher/"
+fragment_files_fisher <- dir(data_path_fisher, pattern = "*csv") 
+
+fragment_data_fisher <- tibble(filename_proc = fragment_files_fisher) %>%
+               mutate(file_contents = map(filename_proc, ~ read_csv(file.path(data_path_fisher, .)))) %>%
+               unnest(cols = c(file_contents)) %>%
+               mutate(from = "fisher")
+
+fragment_data_fisher <- fragment_data_fisher %>% select(-source, -hyperscore)
+fragment_data_fisher <- fragment_data_fisher %>% unique() # sometimes clicked twice
+
+
+
+fragment_data <- bind_rows(fragment_data_fisher , fragment_data_tb)
+# 
+
+
+fragment_data %>% select(-Start, -End, -Peptide, -FractionOrder, -FractionID, -pepcount, -peakid, -candidate, -totfracs, -experiment_order, -ExperimentID, -filename_proc, -experiment_name) %>% unique() %>% 
+    group_by(from, term) %>% 
+    summarise(n = n())
 
 ```
+
+fragment_data for rescoring based on new manual peak identification
+```{r}
+peaks_manual <- fragment_data %>% select(ProteinID, experiment_name, FractionOrder, peakid) %>%
+  unique() %>%
+  rename(peak = peakid)
+
+peaks_manual %>% write_csv("peaks_manual.csv")
+
+
+short_tidy_unique_manual <- short_tidy_unique %>% filter(ProteinID %in% peaks_manual$ProteinID) %>%
+  filter(experiment_name != "HEKB_SEC1") %>%
+  filter(experiment_name != "SOYBN_SEC2") %>%
+   filter(experiment_name != "SOYBN_SEC1") %>%
+  unique()
+
+short_tidy_unique_manual %>%
+  write_csv("data/short_tidy_unique_peaks_manual.csv")
+
+```
+
+Now move to terminal_bias.R
+Rscript scripts/terminal_bias.R data/short_tidy_unique_peaks_manual.csv peaks_manual.csv data/short_tidy_unique_peaks_expanded_fragments_tb_manual.csv
+
+```{r}
+short_tidy_unique_peaks_expanded_fragments_tb_manual_fc <- read_csv("data/short_tidy_unique_peaks_expanded_fragments_tb_manual.csv")
+
+```
+
+
+
+
+# Calculate Fisher's exact test for manually annotated fragments
+
+```{r}
+# Get the end of each peptide as a candidate breakpoint to scan with Fisher's exact test
+breakpoints_manual <- short_tidy_unique_peaks_expanded_fragments_manual %>% select(ProteinID, End) %>% unique() %>% rename(midpoint = End)
+```
+
+
+
+# Create a contingency table based on each of the candidate breakpoints in the peak
+```{r}
+# Max size of contingency_full is num_midpoints * numpeaks * numprots * 4 
+# Nterm obs, Nterm missed, Cterm obs, Cterm missed
+contingency_full_step1_manual <- short_tidy_unique_peaks_expanded_fragments_manual %>% 
+  left_join(breakpoints_manual) %>%
+  mutate(pep_half = if_else(End <= midpoint, "firsthalf", "secondhalf")) %>%
+  select(ProteinID, Peptide, experiment_name, peak, pep_half, presence, midpoint) %>%
+  group_by(ProteinID, experiment_name, peak, pep_half, presence, midpoint) %>%
+    summarize(n = n()) #%>%
+```
+
+```{r}
+
+# Takes around 5 minutes
+all_combinations_fixed_manual <-  contingency_full_step1_manual %>%
+  group_by(ProteinID, peak, midpoint, experiment_name) %>%
+    complete( pep_half = c("firsthalf", "secondhalf"), presence = c("missing", "observed"), fill = list(n = 0))
+
+
+all_combinations_fixed_manual %>% write_csv("all_combinations_fixed_manual.csv")
+contingency_full_manual <- all_combinations_fixed_manual
+```
+
+
+```{r}
+
+# Create the folder if it doesn't exist
+dir.create("all_combinations_fixed_manual", showWarnings = FALSE)
+
+# Split the dataset by 'experiment_name' and write each to a CSV
+all_combinations_fixed_manual %>%
+  group_by(experiment_name) %>%
+  group_split() %>%
+  purrr::walk(~write_csv(.x, file = paste0("all_combinations_fixed_manual/", .x$experiment_name[1], ".csv")))
+
+
+# Here run scripts/fisher.R input.csv output.csv
+# cd all_combinations_fixed_manual/
+#ls *csv | parallel -j 18 Rscript ../scripts/fisher.R {} output_{}
+
+# List all output CSV files
+output_files_manual <- list.files(path = "all_combinations_fixed_manual/", pattern = "output.*.csv", full.names = TRUE)
+
+# Read all files and combine them
+fisher_output_full_manual <- output_files_manual %>%
+  purrr::map_dfr(read_csv)
+
+# Save the combined result
+write_csv(fisher_output_full_manual, "fisher_output_full_combined_manual.csv")
+
+# At this point, in all_combinations_fixed_manual/, we have a p.value for every potential breakpoint in each of the manually annotated protein species. 
+# But we really want only the p-value at the manually annotated breakpoint from the elut_viewer
+
+```
+
+
+
+```{r}
+# First do peak-wise BH, then pick the minimum of that to prioritize protein
+# Then for the annotation step later, can take a hand annotated peak, and calculate the same BH score and the terminal bias score
+
+# This  time, since peakid are consistent across experiment, correct only at the peak level, not peak + experiment_name
+fisher_output_full_bh_manual <- fisher_output_full_manual %>%
+  group_by(ProteinID, peak) %>%
+     mutate(peaklevel_p_value_bh = p.adjust(p.value, method = "BH")) %>%
+  ungroup()
+```
+
+
+# This part not needed I think
+```{r}
+
+fisher_output_summary_manual <- fisher_output_full_bh_manual %>% 
+    group_by(ProteinID) %>%
+     
+     slice_min(peaklevel_p_value_bh, n = 1) %>%
+  rename(min_protlevel_p_value_bh = peaklevel_p_value_bh) %>%
+  ungroup() %>%
+   arrange(min_protlevel_p_value_bh) %>%
+  mutate(
+    #p_value_bonferroni = p.adjust(min_protlevel_p_value_bh, method = "bonferroni"),
+    p_value_bh = p.adjust(min_protlevel_p_value_bh, method = "BH") # Benjamini-Hochberg
+  ) %>%
+  ungroup() %>%
+  unique()%>%
+  mutate(min_p_value = min_protlevel_p_value_bh) # Not using second BH 
+
+```
+
 
 
 
@@ -900,13 +1300,8 @@ fragment_data_terminal <- fragment_data %>%
 fragment_data_terminal %>% write_csv("/project/cmcwhite/data/fragment_data_terminal.csv")
 fragment_data_terminal <- read_csv("/project/cmcwhite/data/fragment_data_terminal.csv")
 
-domain_coverage 
-
-## number of unique peptides in fragment
-
-
-
 ```
+
 
 # Isoform comparison
 ### Table of what parts of sequence are missing from uniprot
@@ -1026,17 +1421,32 @@ fragment_domains_auto <- fragment_data_terminal %>%
      filter(ProtBegin >= nterm_pos & ProtEnd <= cterm_pos) 
 
 fragment_domains_auto_annot <- fragment_domains_auto %>% select(ProteinID, peakid, term, Interpro_ID, Annotation) %>%
+  unique() %>%
   group_by(ProteinID, peakid, term) %>%
     summarize(Interpro_IDs= paste0(Interpro_ID, collapse = ', '),Domains= paste0(Annotation, collapse = ', ')) %>%
   ungroup 
 
-domains_pfam
+
 
 ```
 
 
+Annotate the discovered fragments with terminal bias scores and p-values
+everything should be already calculated, but there's a chance some were filtered out for not meeting thresholds.
+Is is best to just recalculate? 
+No because, lose Benjamini hochberg correction
+```{r}
 
-# Supplemental table 1, annotation of all found fragments
+fisher_output_full_annotation <- fisher_output_full %>%
+  select(ProteinID, nterm_pos, cterm_pos, p.value)
+
+fisher_output_full_annotation
+fragment_data_terminal
+```
+
+
+# Supplemental file 2, annotation of all found fragments
+Now Dataset EV1
 ```{r}
 
 identified_isoforms_formatted_annot <- identified_isoforms  %>%
@@ -1050,16 +1460,47 @@ orthologous_stats <- fragment_data_terminal %>%
        summarize(nprotsingroup = n_distinct(ProteinID)) %>%
   ungroup
 
+
+ fragment_data_terminal %>%
+   select(ProteinID, Entry, Entry_name, peakid, nterm_pos, cterm_pos)
+
+ fisher_output_full_manual 
+ 
+ 
+# Get start and end positions of all peptides
+peptide_annot <- short_tidy %>% 
+  select(ProteinID, Start, End, Peptide) %>%
+  unique()
+
+
+# Get each peak's minimum
+fisher_output_full_bh_manual_annot <- fisher_output_full_bh_manual %>%
+  select(ProteinID, peakid = peak, p.value,  peaklevel_p_value_bh) %>%
+  group_by(ProteinID, peakid) %>%
+    summarize(min_p_value = min(p.value), min_benjh_p_value = min(peaklevel_p_value_bh))
+
+
+
+ 
+short_tidy_unique_peaks_expanded_fragments_tb_manual_fc_annot <- short_tidy_unique_peaks_expanded_fragments_tb_manual_fc %>%
+   select(ProteinID, peakid = peak, abs_log2fc) %>%
+  group_by(ProteinID, peakid) %>%
+      summarize(min_abs_log2fc = min(abs_log2fc))
+
 fragment_data_terminal_annotated <- fragment_data_terminal %>%
   left_join(orthologies) %>%
   left_join(orthologous_stats) %>%
   left_join(unique_peps_per_fragment ) %>%
   left_join(identified_isoforms_formatted_annot) %>%
-  left_join(fragment_domains_auto_annot)
+  left_join(fragment_domains_auto_annot) %>%
+  left_join(short_tidy_unique_peaks_expanded_fragments_tb_manual_fc_annot ) %>%
+  left_join(fisher_output_full_bh_manual_annot)
+
+
 fragment_data_terminal_annotated %>%
-  select(`euNOG ID` = ID, `Truncated proteins in euNOG group` = nprotsingroup, ProteinID, `ProteoformID` = peakid, Category = term, `First observed aa` = nterm_pos, `Last observed aa` = cterm_pos, `Full sequence length` = seqlen,  `In size exclusion` = in_SEC, `In ion exchange` = in_IEX, `First observed peptide`= first_pep,  `Last observed peptide`= last_pep, `Unique peptides` = distinct_peptides, `Candidate Uniprot isoform` = isoforms, `Observed experiments` = exps, `Full domains contained`= Domains, `Interpro domain IDs`= Interpro_IDs ) %>%
+  select(`euNOG ID` = ID, `Truncated proteins in euNOG group` = nprotsingroup, ProteinID, `ProteoformID` = peakid, Category = term, `First observed aa` = nterm_pos, `Last observed aa` = cterm_pos, `Full sequence length` = seqlen,  `In size exclusion` = in_SEC, `In ion exchange` = in_IEX, `First observed peptide`= first_pep,  `Last observed peptide`= last_pep, `Unique peptides` = distinct_peptides, `Candidate Uniprot isoform` = isoforms, `Observed experiments` = exps, `Full domains contained`= Domains, `Interpro domain IDs`= Interpro_IDs, `Proteoform minimum BH-corrected P-value` = min_benjh_p_value, `Proteoform terminal bias score` = min_abs_log2fc) %>%
   arrange(desc(`Truncated proteins in euNOG group`), `euNOG ID`, ProteinID) %>%
-  write_xlsx("Supplemental_File2.xlsx")
+  write_xlsx("DatasetEV1.xlsx")
 
 
 
@@ -1252,6 +1693,7 @@ preprocess <- short_tidy_unique %>% #_labeled_peaks%>%
 #elut_viewer("SF3B1_HUMAN", short_tidy_unique, domaindis_setup) # IEX and SEC SF3B1
 #elut_viewer("Q9FMF9_ARATH ", short_tidy_unique, domaindis_setup) # IEX and SEC SF3B1
 
+elut_viewer("HNRPU_HUMAN", short_tidy_unique, domaindis_setup)
 
 #K7KQN4_SOYBN
 
@@ -2475,7 +2917,7 @@ KEEP Figure 2B
 
 ```{r}
 
-scored_labeled <- bps_identified %>%    
+scored_labeled_all <- bps_identified %>%    
 
 
   group_by(ProteinID, experiment_name) %>%
@@ -2487,32 +2929,52 @@ scored_labeled <- bps_identified %>%
     #summarize(max_abs_log2fc = max(abs_log2fc)) %>%
   #ungroup %>%
   arrange(desc(max_abs_log2fc)) %>%
-   full_join(labels) %>%
- #filter(!is.na(label)) %>% 
-    filter(experiment_name != "HEKB_SEC1") %>%
-  mutate(max_abs_log2fc = replace_na(max_abs_log2fc, -1))  # Add peak to show unscored 
 
-scored_labeled %>%
-  filter(label == "pos" & set == "train") %>%
-  filter(max_abs_log2fc == -1)
+    filter(experiment_name != "HEKB_SEC1")  # Add peak to show unscored 
 
+# Where are the NAs coming from? 
+# They are coming from labeled proteins that don't pass the score thresholds (number of peptides)
 
+scored_labeled <- scored_labeled_all %>%
+  full_join(labels, multiple = "all") %>%
+  #full_join(alt_labels, multiple = "all") %>%
+  filter(!is.na(label))  %>%
+  mutate(max_abs_log2fc = replace_na(max_abs_log2fc, -1))
 
-score_dist_plot <- scored_labeled %>%
+#scored_labeled %>%
+#  filter(label == "pos" & set == "test") %>%
+#  filter(max_abs_log2fc == -1)
+
+# Didn't pass thresholds
+too_few_peptides <- scored_labeled %>% filter(max_abs_log2fc == -1) %>%
+  select(ProteinID, experiment_name)  %>%
+    filter(experiment_name != "HEKB_SEC1")  %>%
+  mutate("toofew" = TRUE)
   
-  mutate(custom_label = case_when(label == "neg" & set == "train" ~ "Negative train",
-                           label == "pos" & set == "train" ~ "Positive train",
-                           label == "neg" & set == "val" ~ "Negative validate",
-                           label == "pos" & set == "val" ~ "Positive validate"
-                           
-                           )) %>%
+
+
+scored_labeled_formatted <- scored_labeled %>%
+    filter(experiment_name != "HEKB_SEC1") 
+
   
-  filter(!is.na(custom_label)) %>%
+  #mutate(custom_label = case_when(label == "neg" & set == "train" ~ "Negative train",
+  #                         label == "pos" & set == "train" ~ "Positive train",
+  #                         label == "neg" & set == "val" ~ "Negative validate",
+  #                         label == "pos" & set == "val" ~ "Positive validate"
+  #                         
+  #                         )) %>%
+  
+ 
   mutate(custom_label = case_when(label=="pos" ~ "Hand selected truncated proteins",
                                   label == "neg" ~ "Random proteins")) %>%
+   filter(!is.na(custom_label))
+
+theme_set(theme_cowplot_consistent_text(font_size = 8))
+# With abundance matching
+score_dist_plot <- scored_labeled_formatted %>%
   #mutate(custom_label = fct_relevel(custom_label, c("Positive train", "Positive validate", "Negative train","Negative validate" ))) %>%
   ggplot(aes(x = max_abs_log2fc, fill = custom_label)) + 
-  geom_histogram(bins = 50) + 
+  geom_histogram(binwidth = 0.1) + 
   background_grid(major = ("x")) +
   scale_fill_manual(values= c(palette[2], "grey")) +
   #xlab("Proteoform score") + 
@@ -2523,12 +2985,138 @@ score_dist_plot <- scored_labeled %>%
   facet_wrap(~custom_label,scales= "free_y", ncol = 1)
 
 score_dist_plot
+scored_labeled_formatted
+
 
 score_dist_plot %>% ggsave("figures/score_dist_plot.png", .,device = "png", width = 2.5, height = 2.5,  units = "in")
 score_dist_plot %>% ggsave("figures/score_dist_plot.pdf", .,device = "pdf", width = 2.5, height = 2.5,  units = "in")
 
+```
+
+
+```{r}
+library(broom)
+result <- scored_labeled_formatted %>% 
+  ## Filter data to only include groups A and B
+  #filter(group %in% c("A", "B")) %>%
+  # Conduct a t-test
+  mutate(case_when(max_abs_log2fc == -1 ~ 0, TRUE ~ max_abs_log2fc )) %>%
+  summarise(t_test = list(t.test(max_abs_log2fc ~ custom_label, data = .))) %>% 
+  # Use broom's tidy() to get a tidy data frame of the results
+  mutate(t_test = map(t_test, tidy)) %>%
+  unnest(t_test)
+
+# The p-value can be found in the column named "p.value"
+print(result$p.value)
 
 ```
+
+
+Create abundance matched sample
+```{r}
+
+# Required Libraries
+library(tidyverse)
+
+# Assuming your data frame (df) has a numeric variable (score), a grouping variable (class) 
+# with levels "control" and "treatment", and an ID variable (id)
+set.seed(42)  # for reproducibility
+df <- data.frame(id = 1:1000,
+                 class = rep(c("control", "treatment"), each = 500),
+                 score = c(rnorm(500, mean = 2, sd = 1), rnorm(500, mean = 3, sd = 1))) %>% as_tibble()
+
+# Calculate quantiles for treatment group
+df <- df %>%
+  mutate(quantile = ifelse(class == "treatment", ntile(score, 100), NA))
+
+# Match controls to treatment based on quantiles
+df_controls <- df %>%
+  filter(class == "control") %>%
+  mutate(quantile = ntile(score, 100))
+
+df_matched <- df %>%
+  filter(class == "treatment") %>%
+  left_join(df_controls, by = "quantile", suffix = c("_treatment", "_control"))
+
+# Check matched samples
+head(df_matched)
+
+
+```
+
+```{r}
+
+# Required Libraries
+# Assuming your data frame (df) has a numeric variable (score) 
+# and a grouping variable (class) with two levels "A" and "B"
+library(ggrepel)
+
+# max abs log2f is by protein, not by experiment
+df <- scored_labeled_formatted %>% rename(score = max_abs_log2fc, class = custom_label) %>%
+  select(ProteinID,  label, class, score) %>%
+  unique()
+# Count the number of scores greater than each value in each class
+
+
+tpr <- data.frame(score2 = -1:5) %>%
+  mutate(
+    num_in_B = map_dbl(score2, ~sum(df$class[df$score >= .] == "Hand selected truncated proteins")), #/  sum(df$score >= .)),
+    num_in_A = map_dbl(score2, ~sum(df$class[df$score >= .] == "Random proteins")),
+    
+      prop_in_B = map_dbl(score2, ~sum(df$class[df$score >= .] == "Hand selected truncated proteins")/  sum(df$score >= .)),
+    prop_in_A = map_dbl(score2, ~sum(df$class[df$score >= .] == "Random proteins")/  sum(df$score >= .))
+    #/  sum(df$score >= .)), / sum(df$score >= .))
+  )
+
+fig2_addition <- tpr %>% as_tibble() %>%
+  mutate(score_label = case_when(score2 == "-1" ~ "All", 
+                                 TRUE ~ paste0(">", score2 ))) %>%
+  mutate(recall = num_in_B / 275) %>%
+  select(score2, prop_in_B, recall, score_label) %>% 
+  ggplot(aes(y = prop_in_B, x = recall, label = score_label)) + 
+  geom_line(color = "grey60") + 
+  geom_point(color= "grey60") + 
+  geom_text_repel(force_pull = 10, size = 2.5, color = "grey20") + ylab("Precision") + xlab("Recall")
+
+fig2_addition
+fig2_addition %>% ggsave("figures/fig2_addition.png", .,device = "png", width = 2, height = 2,  units = "in")
+fig2_addition %>% ggsave("figures/fig2_addition.pdf", .,device = "pdf", width = 2, height = 2,  units = "in")
+
+
+#Compared to 1000 random proteins, above a max terminal bias score of 1, the true positive rate is  73% with a recall of (96.6%), above a score of 2,  the true positive rate is 91.5% with recall of (80.8%), above a score of 4, the true positive rate is  100% with a recall of 18%.
+
+#At a score of 2, the true positive rate is 90%. 
+#At a score of above 4, the true positive rate is 100%. 
+
+#sum(tpr$prop_in_A)
+
+fig2_addition_fdr <- tpr %>%
+  ggplot(aes(x= score, y = prop_in_B)) +
+   #geom_hline(yintercept= 0.95, linetype = "dashed", color = "grey50") + 
+  geom_vline(xintercept= 3, linetype = "dashed", color = "grey50") +
+    geom_line(color = "grey60") + 
+  geom_point(color= "grey60") + 
+  ylab("1 - FDR") +
+  annotate("text", x = 4, y = 0.8, label = "5% FDR", color = "grey50", size = 2) +
+  xlab("Max terminal bias")
+fig2_addition_fdr 
+
+  #geom_hline(yintercept = 0.95, linetype = "dashed")
+
+# Calculate the proportion of scores in class B that are greater than each value
+proportions <- counts %>%
+  mutate(across(score:(score+5), ~.[class == "B"] / sum(.[class == "B"])))
+
+# Calculate the log likelihood
+log_likelihoods <- proportions %>%
+  mutate(across(score:(score+5), log))
+
+print(log_likelihoods)
+
+
+
+```
+
 
 
 # Figure 2C
@@ -2539,7 +3127,8 @@ positives_annot <- positives %>%
   mutate(label = "Hand selected")
 
 bps_screened <- bps_identified %>%
-  filter(abs_log2fc >= 3)
+  left_join(fisher_output_identified) %>%
+  filter(abs_log2fc >=3 | p.value <= 0.001)
   
 
 fragment_data_terminal_expand <-
@@ -2552,7 +3141,9 @@ fragment_data_score <- fragment_data_terminal_expand  %>%
   select(ProteinID, experiment_name) %>%
   inner_join(bps_screened) %>%
   anti_join(positives_annot) %>%
-  mutate(label = "Found with score")
+  mutate(label = "Found with score") 
+
+#fragment_data_score %>% View()
 
 fragment_data_eye <- fragment_data_terminal_expand  %>%
   filter(term %in% c("cterm", "nterm")) %>%
@@ -2568,6 +3159,54 @@ fragment_data_terminal_annot <-
     fragment_data_score,
     fragment_data_eye
   )
+
+```
+
+```{r}
+
+mini_annot <- fragment_data_terminal_annot %>%
+  select(ProteinID, experiment_name, label, peak) %>% unique()
+
+# Fisher output only for human proteins?
+# Should be ~45 "Found with score"
+fisher_output_identified <- fisher_output_full  %>%
+  group_by(ProteinID, experiment_name, peak) %>%
+      filter(p.value == min(p.value)) # %>% data.frame()
+
+library(scales)
+reverse_log_trans <- function() {
+  trans_new(
+    name = 'reverse_log',
+    transform = function(x) -log10(x),
+    inverse = function(x) 10^(-x)
+  )
+}
+
+fisher_output_identified  %>%
+  inner_join(bps_identified, by = c("ProteinID", "peak", "experiment_name")) %>% arrange(p.value) %>%
+  #View()
+
+  #(10000) %>%
+  left_join(mini_annot) %>% 
+  ggplot(aes(x = abs_log2fc, y = p.value, label = ProteinID)) +
+  geom_point() + 
+  scale_y_continuous(trans = reverse_log_trans()) +
+  #scale_y_log10() +
+  #scale_y_reverse() +
+  geom_vline(xintercept = 2.5, linetype = "dashed", color = "grey80") + 
+  facet_wrap(~label, nrow =1 )
+
+fisher_output_sel %>%
+  inner_join(fisher_output_sel, by = c("ProteinID", "experiment_name", "peak")) %>%
+  #sample_n(1000) %>%
+     ggplot(aes(x = abs_log2fc, y = p.value)) + 
+     geom_point() + 
+  scale_y_log10()
+
+```
+
+
+```{r}
 
 
 
@@ -2590,34 +3229,65 @@ peptide_stats <- short_tidy_unique %>%
   mutate(label = replace_na(label, "non_fragment"))
 
 
-library(ggnewscale)
-peptide_stats_plot <-   ggplot() + 
+xxx
+
+peptide_stats_plot <-   peptide_stats %>% filter(label != "non_fragment") %>%
+    mutate(label = factor(label, levels = c("Hand selected", "Final check", "Found with score"))) %>%
+
+
+ggplot( aes(x = num_unique, y = num_counts, color = label, group = label)) + #, label = paste0(ProteinID, experiment_name))) + 
   #geom_point_rast(data = peptide_stats, aes(x = num_unique, y = num_counts), color = "grey80", alpha = 0.2) +
 
-   geom_point(data = filter(peptide_stats, label != "non_fragment"),  
-                aes(x = num_unique, y = num_counts, color = fct_rev(label),  label = paste0(ProteinID, experiment_name)), alpha = 1, size = 0.5  ) +   
-   # scale_color_manual(values = c(palette[2], palette[1], palette[0]), name = "Fragment")  +
-  scale_color_manual(values = c(palette[1], "#ff6200" , "#ffb001" ), name = "Fragment") +
+   geom_point(alpha = 1, size = 0.5  ) +   
+  #geom_density_2d(alpha = 1, size = 0.5, n= 128, bins = 3) +
   
-   new_scale_color() +
-    geom_density_2d(data = peptide_stats, aes(x = num_unique, y = num_counts, color = as.factor(..level..)), alpha = 0.8, n = 128, bins = 4, contour_var = "density", ) +
+   # scale_color_manual(values = c(palette[2], palette[1], palette[0]), name = "Fragment")  +
+  scale_color_manual(values = c("Hand selected"= "#0072B2", "Found with score" = "#ff6200" , "Final check" = "#ffb001" ), name = "Fragment") +
+  
+  # new_scale_color() +
+    #geom_density_2d(data = peptide_stats, aes(x = num_unique, y = num_counts, color = as.factor(..level..)), alpha = 0.8, n = 128, bins = 3, contour_var = "density", ) +
   #scale_color_brewer(palette = "Greys", guide = "none") + 
-  scale_color_manual(values = c("grey70", "grey50", "grey30"), guide = "none") +
+  #scale_color_manual(values = c(palette[1], "#ff6200" , "#ffb001" ), name = "Fragment") +
+  #scale_color_manual(values = c("grey70", "grey50", "grey30"), guide = "none") +
   scale_y_log10() +
   scale_x_log10() +
   ylab("# Peptide spectral matches") +
-  xlab("# Unique peptides")
+  xlab("# Unique peptides") +
+  guides(color = guide_legend(nrow = 2, title.position = "top")) +
+  theme(legend.title = element_blank(), legend.position = "bottom")
+
+
+peptide_stats_plot
+
+#library(ggnewscale)
+#peptide_stats_plot <-   ggplot() + 
+#  #geom_point_rast(data = peptide_stats, aes(x = num_unique, y = num_counts), color = "grey80", alpha = 0.2) +#
+
+#   geom_point(data = filter(peptide_stats, label != "non_fragment"),  
+#                aes(x = num_unique, y = num_counts, color = fct_rev(label),  label = paste0(ProteinID, experiment_name)), alpha = 1, size = 0.5  ) +   
+#  geom_density_2d(data = filter(peptide_stats, label != "non_fragment"),  
+#                aes(x = num_unique, y = num_counts, color = fct_rev(label),  label = paste0(ProteinID, #experiment_name)), alpha = 1, size = 0.5, bins = 1 ) +
+#  
+#   # scale_color_manual(values = c(palette[2], palette[1], palette[0]), name = "Fragment")  +
+#  scale_color_manual(values = c(palette[1], "#ff6200" , "#ffb001" ), name = "Fragment") +
+#  
+#  # new_scale_color() +
+#    #geom_density_2d(data = peptide_stats, aes(x = num_unique, y = num_counts, color = as.factor(..level..)), #alpha = 0.8, n = 128, bins = 3, contour_var = "density", ) +
+#  #scale_color_brewer(palette = "Greys", guide = "none") + 
+#  #scale_color_manual(values = c(palette[1], "#ff6200" , "#ffb001" ), name = "Fragment") +
+#  #scale_color_manual(values = c("grey70", "grey50", "grey30"), guide = "none") +
+#  scale_y_log10() +
+#  scale_x_log10() +
+#  ylab("# Peptide spectral matches") +
+#  xlab("# Unique peptides") +
+#  guides(color = guide_legend(nrow = 2, title.position = "top")) +
+#  theme(legend.title = element_blank(), legend.position = "bottom")#
 
 peptide_stats_plot
 
 peptide_stats_plot %>% ggsave("figures/peptide_stats_plot.png", .,device = "png", width = 3.5, height = 2.2,  units = "in")
 
 peptide_stats_plot  %>% ggsave("figures/peptide_stats_plot.pdf", ., device = "pdf", width = 3.5, height = 2.2, units = "in")
-
-#peptide_stats_plot %>% ggsave("figures/peptide_stats_plot.png", .,device = "png", width = 3.5, height = 2,  units = "in")
-
-#peptide_stats_plot  %>% ggsave("figures/peptide_stats_plot.pdf", ., device = "pdf", width = 3.5, height = 2, units = "in")
-  
 
 
 ```
@@ -2661,6 +3331,7 @@ stats
 #colors_key <- c("Red", "Blue", "Orange","Green",  "Grey", "Purple","Black") 
 #palette <- rep(colorblocks, 20)
 library(ggrepel)
+library(ggtext)
 
 stats$numpos[is.na(stats$numpos)] <- 0
 
@@ -2673,23 +3344,31 @@ stats_plot <- stats %>%
 mutate(Sample = case_when(
        grepl("HEK", experiment_name) ~ "HEK",
        grepl("HEMO", experiment_name) ~ "Hemolysate",
-       grepl("CHLRE", experiment_name) ~ "Chlamydomonas",
-       grepl("ARATH", experiment_name) ~ "Arabidopsis"
+       grepl("CHLRE", experiment_name) ~ "*Chlamydomonas*",
+       grepl("ARATH", experiment_name) ~ "*Arabidopsis*"
     
   )) %>%
-  mutate(Sample = fct_relevel(Sample, c("Chlamydomonas", "HEK", "Arabidopsis", "Hemolysate"))) %>%
+  mutate(Sample = fct_rev(fct_relevel(Sample, c("*Chlamydomonas*",  "*Arabidopsis*","HEK", "Hemolysate")))) %>%
   mutate(labels = case_when(numpos > 25 ~ experiment_name)) %>%
   
   ggplot(aes( x = exp_totpepcounts, y = numpos, color = Sample, shape = Sample, label = Sample )) + 
   geom_point(alpha = 0.9) + 
  # geom_text_repel(size = 3)+ 
-  scale_color_manual(values = c("Arabidopsis" = palette[3], 
-                                "Chlamydomonas" = palette[1], 
+  scale_shape_manual(values = c("*Arabidopsis*" = 15, 
+                                "*Chlamydomonas*" = 16, 
+                                "HEK" = 17, 
+                                "Hemolysate" =3)) +
+  
+  scale_color_manual(values = c("*Arabidopsis*" = palette[3], 
+                                "*Chlamydomonas*" = palette[1], 
                                 "HEK" = palette[2], 
                                 "Hemolysate" =palette[4])) +
   scale_x_continuous(labels = scales::comma, breaks = c(400000,800000)) +
+  guides(color = guide_legend(nrow = 2, title.position = "top"), shape  = guide_legend(nrow = 2, title.position = "top")) +
+  theme(legend.title = element_blank(), legend.position = "bottom") +
   xlab("Total PSMs") + 
-  ylab("# Proteins with truncation proteoforms")
+  ylab("# Proteins with truncation proteoforms") +
+  theme(legend.text = element_markdown())
 
 stats_plot
 
@@ -2703,6 +3382,7 @@ stats_plot %>% ggsave("figures/stats_plot.pdf", ., device = "pdf", width = 3, he
 
 #Supplemental file 1
 ```{r}
+library(writexl)
 # Supplemental File 1
 stats_formatted <- stats %>%
   filter(experiment_name != "HEKB_SEC1") %>%
@@ -2720,8 +3400,36 @@ stats_formatted %>%
 ```
 
 
+Figure 2 revision
+```{r}
+#left <- plot_grid(NULL, peptide_stats_plot + theme(legend.position = "bottom"), ncol= 1, labels = c("A", "C"), label_size = 8, rel_heights = c(1,0.9))
+#right <- plot_grid(score_dist_plot, stats_plot + theme(legend.position = "bottom"), ncol = 1, labels = c("B", "D"), label_size = 8, align = "v", axis = "l", rel_heights = c(1,0.9))
 
-Figure 2
+topright <- plot_grid(fig2_addition, fig2_addition_fdr, labels = c("C", NULL), ncol = 1, label_size = 8)
+topright
+
+top_row <- plot_grid(NULL, new_Figure2b, topright, labels  = c("A", "B"), nrow = 1, label_size = 8)
+top_row
+
+#tlbr
+bottom_row <- plot_grid( NULL,
+                         peptide_stats_plot + theme(plot.margin = margin(t = 5, r = 30, b = 10, l = 20)),
+                         stats_plot + theme(plot.margin = margin(t = 5, r = 50, b = 10, l = 20)),
+                         nrow = 1, labels = c("", "D", "E"), label_size = 8, rel_widths =c (0.2,1,1))
+bottom_row
+
+
+figure2_generated_rev <- plot_grid(top_row, bottom_row, ncol = 1, rel_heights = c(1, 0.7))
+figure2_generated_rev
+
+figure2_generated_rev %>% ggsave("figures/figure2_generated_rev.png", .,device = "png", width = 7, height = 7,  units = "in")
+figure2_generated_rev  %>% ggsave("figures/figure2_generated_rev.pdf", ., device = "pdf", width = 7, height = 7, units = "in")
+
+
+
+```
+
+Figure 2 pre revision 2
 ```{r}
 left <- plot_grid(NULL, peptide_stats_plot + theme(legend.position = "bottom"), ncol= 1, labels = c("A", "C"), label_size = 8, rel_heights = c(1,0.9))
 right <- plot_grid(score_dist_plot, stats_plot + theme(legend.position = "bottom"), ncol = 1, labels = c("B", "D"), label_size = 8, align = "v", axis = "l", rel_heights = c(1,0.9))
@@ -2762,6 +3470,8 @@ make_pr_curve <- function( cutoff, for_pr,scorename =score){
 }
 
 for_pr <- scored_labeled %>%
+  
+  left_join(labels) %>%
   mutate(id = paste0(ProteinID, "-", experiment_name)) %>%
   rename(score= max_abs_log2fc) %>%
   select(id, label, set, score) %>%
@@ -3189,4 +3899,713 @@ bps_loc %>% ungroup %>%
 
 
 
+UNUSED
+```{r}
+theme_set(theme_cowplot_consistent_text())
 
+fisher_output_summary %>% 
+  inner_join(scored_labeled_all, by = c("ProteinID", "experiment_name")) %>%
+  inner_join(labels) %>%
+  left_join(too_few_peptides) %>%
+  mutate(p_value_bh = case_when(toofew == TRUE ~ 100,
+                                TRUE ~ p_value_bh)) %>%
+   ggplot(aes(x = max_abs_log2fc, y = p_value_bh)) + 
+      geom_point(alpha = 0.05) + 
+  scale_y_log10() + 
+  geom_vline(xintercept = 3.5, linetype = "dashed") + 
+  geom_hline(yintercept = 0.01, linetype = "dashed") +
+  facet_wrap(~label, ncol = 1)
+
+
+
+scored_labeled_all %>%
+  left_join(labels) %>%
+   inner_join(fisher_output_summary, by = c("ProteinID", "experiment_name")) %>%
+  ggplot(aes(x = max_abs_log2fc, y = min_p_value)) + 
+      geom_point(alpha = 0.1) + 
+  scale_y_log10() + 
+  facet_wrap(~label, ncol = 1)
+
+
+theme_set(theme_cowplot_consistent_text(font_size = 8))
+# With abundance matching
+a <- scored_labeled_all_formatted %>%
+  #mutate(custom_label = fct_relevel(custom_label, c("Positive train", "Positive validate", "Negative train","Negative validate" ))) %>%
+  ggplot(aes(x = max_abs_log2fc, fill = custom_label)) + 
+  geom_histogram(binwidth = 0.1) + 
+  background_grid(major = ("x")) +
+  #scale_x_log10()+ 
+  #scale_fill_manual(values= c(palette[2], "grey")) +
+  #xlab("Proteoform score") + 
+  xlab("Max absolute log2 Fold Change\n(N vs. C terminal observed/observable peptides") +
+ # xlab("Max abs") +
+  ylab("# of proteins") +
+  theme(legend.position = "none", strip.background = element_blank()) +
+  facet_wrap(~custom_label,scales= "free_y", ncol = 1)
+
+
+fragment_data_final <- fragment_data %>% filter(term != "full") %>%
+  select(ProteinID, experiment_name, term) %>% unique()
+
+
+theme_set(theme_cowplot_consistent_text(font_size = 8))
+# With abundance matching
+b <- fisher_output_summary_formatted %>%
+  #mutate(custom_label = fct_relevel(custom_label, c("Positive train", "Positive validate", "Negative train","Negative validate" ))) %>%
+  ggplot(aes(x = -log10(min_p_value), fill = custom_label)) + 
+  geom_histogram(binwidth = 1) + 
+  background_grid(major = ("x")) +
+  #scale_x_log10()+ 
+  #scale_fill_manual(values= c(palette[2], "grey")) +
+  #xlab("Proteoform score") + 
+ # xlab("Max absolute log2 Fold Change\n(N vs. C terminal observed/observable peptides") +
+  xlab("-log10(p.value)") +
+  ylab("# of proteins") +
+  theme(legend.position = "none", strip.background = element_blank()) +
+  facet_wrap(~custom_label,scales= "free_y", ncol = 1)
+
+
+plot_grid(a,b)
+
+
+fisher_output_summary_formatted %>% inner_join(scored_labeled_all_formatted) %>%
+  ggplot(aes(x = -log10(min_p.value), y = max_abs_log2fc, fill = custom_label)) + 
+  geom_point(alpha = 0.1) +
+  #geom_histogram(binwidth = 1) + 
+  #background_grid(major = ("x")) +
+  #scale_x_log10()+ 
+  #scale_fill_manual(values= c(palette[2], "grey")) +
+  #xlab("Proteoform score") + 
+ # xlab("Max absolute log2 Fold Change\n(N vs. C terminal observed/observable peptides") +
+  xlab("-log10(p.value)") +
+  ylab("# of proteins") +
+  theme(legend.position = "none", strip.background = element_blank()) +
+  facet_wrap(~custom_label,scales= "free_y", ncol = 1) +
+  geom_hline(yintercept = 3.5, linetype = "dashed") +
+  geom_vline(xintercept = 8, linetype = "dashed")
+
+theme_set(theme_cowplot_consistent_text(font_size = 8))
+
+fisher_output_summary%>%
+  left_join(labels) %>%
+  
+  
+  #mutate(custom_label = fct_relevel(custom_label, c("Positive train", "Positive validate", "Negative train","Negative validate" ))) %>%
+  ggplot(aes(x = -log10(min_p.value), fill = custom_label)) + 
+  geom_histogram(binwidth = 0.1) + 
+  background_grid(major = ("x")) +
+  scale_x_log10()+ 
+  scale_fill_manual(values= c(palette[2], "grey")) +
+  #xlab("Proteoform score") + 
+ # xlab("Max absolute log2 Fold Change\n(N vs. C terminal observed/observable peptides") +
+  xlab("Minimum p-value") +
+  ylab("# of proteins") +
+  theme(legend.position = "none", strip.background = element_blank()) +
+  facet_wrap(~custom_label,scales= "free_y", ncol = 1)
+
+
+
+
+```
+
+
+```{r}
+
+
+scored_labeled_all_formatted <- scored_labeled_all %>%
+  left_join(labels) %>%
+  #left_join(too_few_peptides) %>%
+  #mutate(p_value_bh = case_when(toofew == TRUE ~ 1000, # Set very high p-value for too low abundance to be fair in match to the max_abs_log2fc case
+                #                TRUE ~ p_value_bh)) %>%
+  
+  #mutate(custom_label = case_when(label == "neg" & set == "train" ~ "Negative train",
+  #                         label == "pos" & set == "train" ~ "Positive train",
+  #                         label == "neg" & set == "val" ~ "Negative validate",
+  #                         label == "pos" & set == "val" ~ "Positive validate"
+  #                         
+  #                         )) %>%
+    left_join(fragment_data_final) %>%
+  
+ 
+  mutate(custom_label = case_when(label=="pos" ~ "Hand selected truncated proteins",
+                                  label == "neg" ~ "Random proteins",
+                                  !is.na(term) ~ "Final selection",
+                                  TRUE ~ "MORE")) %>%
+   filter(!is.na(custom_label)) 
+
+
+
+fisher_output_summary_formatted <- fisher_output_summary %>%
+  left_join(labels) %>%
+  left_join(fragment_data_final) %>%
+  left_join(too_few_peptides) %>%
+  mutate(p_value_bh = case_when(toofew == TRUE ~ 1000, # Set very high p-value for too low abundance to be fair in match to the max_abs_log2fc case
+                                TRUE ~ p_value_bh)) %>%
+  
+
+  
+ 
+  mutate(custom_label = case_when(label=="pos" ~ "Hand selected truncated proteins",
+                                  label == "neg" ~ "Random proteins",
+                                  !is.na(term) ~ "Final selection",
+                                  is.na(label) ~ "MORE")) %>%
+   filter(!is.na(custom_label)) 
+
+
+
+allscored_formatted <- fisher_output_summary_formatted %>% full_join(scored_labeled_all_formatted)  %>%
+  mutate(max_abs_log2fc= case_when(is.na(max_abs_log2fc) ~ 0, TRUE ~ max_abs_log2fc)) %>%
+  select(-peak, -midpoint, -experiment_name, -data, -estimate, -p.value, -conf.low, -conf.high, -method, -alternative, -term, -actual_terminal_peptide, -terminal, -toofew) %>%
+  unique() 
+
+theme_set(theme_cowplot_consistent_text(font_size = 8))
+
+a <- allscored_formatted %>%
+    filter(custom_label %in% c("Hand selected truncated proteins", "Random proteins")) %>%
+    ggplot(aes(x = -log10(min_p_value), fill = custom_label)) + 
+  geom_histogram(binwidth = 0.4) + 
+  background_grid(major = ("x")) +
+  #geom_density() + 
+  #scale_x_log10()+ 
+  scale_fill_manual(values= c(palette[2], "grey")) +
+  #xlab("Proteoform score") + 
+  xlab("Min -log10(p-value)") +
+ # xlab("Max absolute log2 Fold Change\n(N vs. C terminal observed/observable peptides") +
+  #xlab("Minimum p-value") +
+  ylab("# of proteins") +
+  theme(legend.position = "none", strip.background = element_blank()) +
+  facet_wrap(~custom_label,scales= "free_y", ncol = 1)
+
+
+b <- allscored_formatted%>%
+  filter(custom_label %in% c("Hand selected truncated proteins", "Random proteins")) %>%
+    ggplot(aes(x = max_abs_log2fc, fill = custom_label)) + 
+  geom_histogram(binwidth = 0.2) + 
+  #geom_density() + 
+  background_grid(major = ("x")) +
+  #scale_x_log10()+ 
+  scale_fill_manual(values= c(palette[2], "grey")) +
+  #xlab("Proteoform score") + 
+  xlab("Max terminal bias") + 
+ # xlab("Max absolute log2 Fold Change\n(N vs. C terminal observed/observable peptides") +
+  #xlab("Minimum p-value") +
+  ylab("# of proteins") +
+  theme(legend.position = "none", strip.background = element_blank()) +
+  facet_wrap(~custom_label,scales= "free_y", ncol = 1)
+
+
+# Actually with assemble with cowplot
+new_Figure2b<- plot_grid(b,a, ncol = 1)
+new_Figure2b
+new_Figure2b %>% ggsave("figures/new_Figure2b.png", .,device = "png", width = 2.5, height = 3.5,  units = "in")
+new_Figure2b %>% ggsave("figures/new_Figure2b.pdf", .,device = "pdf", width = 2.5, height = 3.5,  units = "in")
+
+```
+
+UNUSED
+```{r}
+
+
+
+c <- allscored_formatted%>%
+  filter(custom_label %in% c("Hand selected truncated proteins", "Random proteins")) %>%
+    ggplot(aes(x = max_abs_log2fc * -log10(min_p_value), fill = custom_label)) + 
+  #geom_histogram(binwidth = 1) + 
+  geom_density() +
+  background_grid(major = ("x")) +
+  #scale_x_log10()+ 
+  scale_fill_manual(values= c(palette[2], "grey")) +
+  #xlab("Proteoform score") + 
+  xlab("Max score") +
+ # xlab("Max absolute log2 Fold Change\n(N vs. C terminal observed/observable peptides") +
+  #xlab("Minimum p-value") +
+  ylab("# of proteins") +
+  theme(legend.position = "none", strip.background = element_blank()) +
+  facet_wrap(~custom_label,scales= "free_y", ncol = 1) 
+
+```
+
+```{r}
+palette <- rep(c("#0072B2","#E69F00","#009E24","#FF0000", "#979797","#5530AA"), 8)
+
+theme_set(theme_cowplot_consistent_text(font_size = 8))
+
+# Supplementary Figure 1
+new_SuppFigure1 <- allscored_formatted%>%
+    filter(custom_label %in% c("Hand selected truncated proteins", "Random proteins")) %>%
+   mutate(g = case_when(min_p_value < 0.001 & max_abs_log2fc > 3  ~ "Both",
+                            min_p_value < 0.001 ~ "P-value threshold",
+                            max_abs_log2fc > 3 ~ "Terminal bias threshold", 
+                            TRUE ~ "Neither")) %>%
+  
+  mutate(g = factor(g, levels = c("P-value threshold", "Neither", "Both", "Terminal bias threshold"))) %>%
+
+
+   ggplot(aes(x = max_abs_log2fc, y =-log10(min_p_value), color = g)) + #, color = fct_rev(fct_relevel(g, "Neither",  after = Inf)))) +
+   xlab("Max terminal bias") +
+   ylab("Min -log10(p-value)") +
+   geom_point(alpha = 0.5)+
+  theme( strip.background = element_blank()) +
+  theme(legend.position = "bottom", legend.title = element_blank()) +
+ 
+  facet_wrap(~custom_label, ncol = 1) +
+  guides(color = guide_legend(nrow = 2, title.position = "top")) +
+  geom_hline(yintercept = -log10(0.001), linetype = "dashed", color = palette[1]) +
+  geom_vline(xintercept = 3, linetype = "dashed", color = palette[2]) +
+  scale_color_manual(values = c("P-value threshold" = "#0072B2", 
+                                "Both" = "#009E24", 
+                                "Neither" = "#979797", 
+                                "Terminal bias threshold" = "#E69F00"),
+                     name = "Prioritized")
+
+
+
+new_SuppFigure1 
+new_SuppFigure1 %>% ggsave("figures/new_SuppFigure1.png", .,device = "png", width = 3.5, height = 4.5,  units = "in")
+new_SuppFigure1 %>% ggsave("figures/new_SuppFigure1.pdf", .,device = "pdf", width = 3.5, height = 4.5,  units = "in")
+
+```
+
+UNUSED
+```{r}
+
+# Replace Figure 2B
+ allscored_formatted%>%
+  filter(custom_label %in% c("Hand selected truncated proteins", "Random proteins")) %>%
+    ggplot(aes(x = max_abs_log2fc * -log10(min_p_value), fill = custom_label)) + 
+  geom_histogram(binwidth = 1) + 
+  #geom_density() +
+  background_grid(major = ("x")) +
+  #scale_x_log10()+ 
+  scale_fill_manual(values= c(palette[2], "grey")) +
+  #xlab("Proteoform score") + 
+  xlab("Max score") +
+ # xlab("Max absolute log2 Fold Change\n(N vs. C terminal observed/observable peptides") +
+  #xlab("Minimum p-value") +
+  ylab("# of proteins") +
+  theme(legend.position = "none", strip.background = element_blank()) +
+  facet_wrap(~custom_label,scales= "free_y", ncol = 1) 
+
+
+
+
+p <- allscored_formatted%>%
+    filter(custom_label %in% c("Hand selected truncated proteins", "Random proteins")) %>%
+   mutate(g = case_when(min_p_value < 0.001 & max_abs_log2fc > 3  ~ 0,
+                            min_p_value < 0.001 ~ 1,
+                             max_abs_log2fc > 3 ~ 2, 
+                            TRUE ~ 3)) %>%
+   ggplot(aes(x = max_abs_log2fc, y =-log10(min_p_value), color = label, group = label)) + 
+   geom_point(alpha = 0.2)#+
+  # scale_color_manual(values= c(palette[2], palette[1], palette[3], palette[5])) 
+
+library(ggExtra)
+ggMarginal(p, type = "density", size = 5,groupColour = TRUE, groupFill = TRUE)
+
+```
+
+```{r}
+library(ggridges)
+allscored_formatted%>%
+    filter(custom_label %in% c("Hand selected truncated proteins", "Random proteins")) %>%
+    ggplot(aes(x = -log10(min_p_value), group = custom_label)) + #, y = max_abs_log2fc, group = custom_label)) + #fill = custom_label)) + 
+ geom_density_ridges() +
+  #background_grid(major = ("x")) +
+  #scale_x_log10()+ 
+  #scale_fill_manual(values= c(palette[2], "grey")) +
+  #xlab("Proteoform score") + 
+ # xlab("Max absolute log2 Fold Change\n(N vs. C terminal observed/observable peptides") +
+  xlab("Minimum p-value") +
+  ylab("# of proteins") +
+  theme(legend.position = "none", strip.background = element_blank()) #+
+  #facet_wrap(~custom_label,scales= "free_y", ncol = 1)
+
+
+b <- allscored_formatted%>%
+  filter(custom_label %in% c("Hand selected truncated proteins", "Random proteins")) %>%
+    ggplot(aes(x = max_abs_log2fc, fill = custom_label)) + 
+  geom_histogram(binwidth = 0.2) + 
+  background_grid(major = ("x")) +
+  #scale_x_log10()+ 
+  scale_fill_manual(values= c(palette[2], "grey")) +
+  #xlab("Proteoform score") + 
+ # xlab("Max absolute log2 Fold Change\n(N vs. C terminal observed/observable peptides") +
+  #xlab("Minimum p-value") +
+  ylab("# of proteins") +
+  theme(legend.position = "none", strip.background = element_blank()) +
+  facet_wrap(~custom_label,scales= "free_y", ncol = 1)
+
+
+```
+
+```{r}
+score_dist_plot
+  
+
+fisher_output_summary_formatted %>% full_join(scored_labeled_all_formatted)  %>%
+  mutate(max_abs_log2f= case_when(is.na(max_abs_log2fc) ~ -1, TRUE ~ max_abs_log2fc)) %>%
+  ggplot(aes(x = -log10(min_p_value), y = max_abs_log2fc)) +
+  geom_point(alpha =0.1)+
+  facet_wrap(~custom_label)
+
+```
+
+
+```{r}
+
+
+
+# This is too slow to run in Rstudio, migrating to script
+library(furrr)
+library(future)
+plan(strategy = multisession)
+contingency_full_nested   <- all_combinations_fixed %>%
+  ungroup() %>% 
+  group_by(ProteinID, experiment_name, peak, midpoint) %>%
+  nest()
+ 
+
+contingency_full_nested_sel <- contingency_full_nested %>% filter(ProteinID %in% fragment_data_terminal$ProteinID)
+
+
+
+ contingency_full_nested_sel%>% 
+   filter(grepl("SHOT1", ProteinID)) %>%
+   select(peak, midpoint)
+ 
+ 
+ ```
+ 
+ 
+ ```{r}
+ 
+ fisher_output_sel <- contingency_full_nested_sel %>%  
+     mutate(test_result =  map(data, ~broom::tidy(fisher.test(xtabs(n ~ pep_half + presence, data = .))), .progress = TRUE)) %>%
+  unnest(test_result)
+ 
+
+fisher_output_sel %>% write_csv("fisher_output_sel.csv")
+ 
+ 
+fisher_output_full <- contingency_full_nested %>%  
+     mutate(test_result =  map(data, ~broom::tidy(fisher.test(xtabs(n ~ pep_half + presence, data = .))), .progress = TRUE)) %>%
+  unnest(test_result)
+
+
+fisher_output_full %>% write_csv("fisher_output_full.csv")
+
+```
+
+unused
+```{r}
+
+
+contingency <- short_tidy_unique_peaks_expanded_fragments %>% #filter(grepl("UBP15", ProteinID)) %>%
+  separate(ProteinID, into = c("tmp", "Entry", "Entry_name"), sep= "[|]",remove = FALSE) %>%
+  select(-seqlen) %>%
+  left_join(meta) %>%
+  mutate(midpoint = seqlen/2) %>%
+  mutate(pep_half = case_when(End <= midpoint ~ "firsthalf", 
+                              TRUE ~ "secondhalf"))  %>%
+  select(ProteinID, Peptide, experiment_name, peak, pep_half, presence) %>% #filter(grepl("UBP15", ProteinID)) %>%
+  group_by(ProteinID, experiment_name, peak, pep_half, presence) %>%
+    summarize(n = n()) %>%
+    arrange(peak, pep_half, presence)  %>%
+    group_by(ProteinID, experiment_name, peak) %>%
+  complete(pep_half = c("firsthalf", "secondhalf"), 
+           presence = c("missing", "observed"), 
+           fill = list(n = 0))
+
+
+
+fisher_output <- contingency %>%
+  ungroup() %>% 
+  group_by(ProteinID, experiment_name, peak) %>%
+  nest() %>%
+    mutate(test_result = map(data, ~broom::tidy(fisher.test(xtabs(n ~ pep_half + presence, data = .))))) %>%
+  unnest(test_result)
+
+
+fisher_output %>% arrange(p.value) %>% head()
+
+tail(fisher_output)
+
+
+
+```
+
+```{r}
+fisher_output
+
+for_pr_fisher <- fisher_output %>%
+  
+  left_join(labels) %>%
+  mutate(id = paste0(ProteinID, "-", experiment_name)) %>%
+  mutate(score= -log(p.value)) %>%
+  select(id, label, set, score) %>%
+  mutate(num_label = case_when(
+    label == "pos" ~ 1,
+    label == "neg" ~ -1
+  )) 
+
+for_pr_train_fisher <- for_pr_fisher %>%
+  filter(set == "train")
+for_pr_validate_fisher <- for_pr_fisher %>%
+  filter(set == "val")
+
+increments_fisher <- seq(0, max(for_pr_fisher$score), 0.1)
+pr_train_fisher <- map_dfr(increments_fisher, ~make_pr_curve(., for_pr_train_fisher)) %>%
+  mutate(set = "train")
+pr_validate_fisher <- map_dfr(increments_fisher, ~make_pr_curve(., for_pr_validate_fisher))  %>%
+  mutate(set = "validate")
+
+pr_fisher <- bind_rows(pr_train_fisher, pr_validate_fisher)
+
+
+pr_plot_fisher <- pr_fisher %>%
+   ggplot() + 
+  geom_line(aes(x = recall, y = precision, color = set), alpha = 0.7, size = 2) + 
+  scale_color_manual(values = c("blue", "red")) +
+  xlim(0,1) +
+  ylim(0,1) +
+  geom_label(x = 0.85, y = 0.9, label = "train", color = "blue", size = 3) +
+  geom_label(x = 0.5, y = 0.7, label = "validate", color = "red", size = 3)   +
+  theme(legend.position = "none")
+pr_plot_fisher
+  
+
+pr_plot %>% ggsave("figures/pr_plot.png", .,device = "png", width = 2.5, height = 2.5,  units = "in")
+pr_plot %>% ggsave("figures/pr_plot.pdf", .,device = "pdf", width = 2.5, height = 2.5,  units = "in")
+
+
+
+```
+
+# Unused
+```{r}
+exps_w_fl <- fragment_data%>%
+   inner_join(over2_peptide_counts) %>%
+  filter(!experiment_name %in% c("HEKR_IEX1", "HEKR_IEX2", "HEKB_SEC1")) %>%
+  filter(term == "full") %>%
+  select(ProteinID, experiment_name) %>%
+  unique()
+
+exps_w_terms <- fragment_data%>%
+  filter(term %in% c("cterm", "nterm")) %>%
+  select(ProteinID, experiment_name) %>% unique()
+
+exps_w_both <- inner_join(exps_w_fl, exps_w_terms) %>%
+  filter(grepl("SEC", experiment_name))
+
+locs_fl_vs_frag <- fragment_data %>% semi_join(exps_w_both) %>% #  head %>% 
+  group_by(ProteinID, experiment_name, peakid, term) %>%
+      summarize(mid_frac = weighted.mean(FractionOrder, pepcount))
+locs_fl<- locs_fl_vs_frag %>% filter(term == "full")
+locs_frag <- locs_fl_vs_frag %>% filter(term != "full")
+
+locs_both <- locs_fl %>% full_join(locs_frag, by = c("ProteinID", "experiment_name"), multiple = "all", suffix = c("full", "frag"))
+
+locs_both %>% filter(mid_fracfrag == mid_fracfull)
+
+locs_both_annot <- locs_both %>%
+  filter(grepl("HEK", experiment_name)) %>%
+  mutate(sizebal = case_when(mid_fracfull < mid_fracfrag ~ "expected",
+                             mid_fracfull > mid_fracfrag ~ "unexpected")) 
+
+locs_both_annot %>%
+  filter(sizebal == "unexpected")
+locs_both_annot %>%
+  group_by(sizebal) %>%
+     summarize(n= n())
+
+locs_both %>%  ggplot(aes(x = mid_fracfull,  y = mid_fracfrag, label = ProteinID, color = termfrag)) + 
+  geom_point(alpha= 0.2) +
+  geom_abline(intercept = 0, slope = 1) 
+```
+
+
+
+```{r}
+breakpoints_test <- breakpoints %>% filter(grepl("SHOT1", ProteinID) | grepl("S23IP", ProteinID))
+short_tidy_unique_peaks_expanded_fragments_test <- short_tidy_unique_peaks_expanded_fragments  %>% filter(grepl("SHOT1", ProteinID) | grepl("S23IP", ProteinID))
+
+contingency_full_step1_test <- short_tidy_unique_peaks_expanded_fragments_test %>% 
+  left_join(breakpoints_test, by= "ProteinID") %>%
+  mutate(pep_half = if_else(End <= midpoint, "firsthalf", "secondhalf")) %>%
+
+  #mutate(pep_half = case_when(End <= midpoint ~ "firsthalf", 
+  #                            TRUE ~ "secondhalf"))  %>%
+  select(ProteinID, Peptide, experiment_name, peak, pep_half, presence, midpoint) %>%
+  group_by(ProteinID, experiment_name, peak, pep_half, presence, midpoint) %>%
+    summarize(n = n())
+
+
+
+all_combinations_test <- with(contingency_full_step1_test, 
+                         expand.grid(ProteinID = unique(ProteinID),
+                                     experiment_name = unique(experiment_name),
+                                     peak = unique(peak),   
+                                     midpoint = unique(midpoint),
+                                     pep_half = c("firsthalf", "secondhalf"),
+                                     presence = c("missing", "observed")))
+
+
+contingency_full_step1_test %>% 
+  group_by(ProteinID, peak, midpoint, experiment_name) %>%
+  complete(pep_half = c("firsthalf", "secondhalf"), 
+                  presence = c("missing", "observed"), 
+                  fill = list(n = 0)) 
+ 
+all_combos_test2 <- contingency_full_step1_test %>%
+  group_by(ProteinID, peak, midpoint, experiment_name) %>%
+    complete( pep_half = c("firsthalf", "secondhalf"), presence = c("missing", "observed"), fill = list(n = 0))
+
+all_combos_test2
+
+all_combos_test2 %>%
+  group_by(ProteinID, peak, midpoint, experiment_name) %>%
+    summarize(n = n())
+
+all_combinations_test %>% filter(grepl("SHOT", ProteinID)) %>% select(peak) %>% unique
+# Max size of contingency_full is num_midpoints * numpeaks * numprots * 4
+```
+
+
+
+```{r}
+all_combinations_test <- with(contingency_full_step1_test, 
+                         expand.grid(ProteinID = unique(ProteinID),
+                                     experiment_name = unique(experiment_name),
+                                     peak = unique(peak),
+                                     midpoint = unique(midpoint),
+                                     pep_half = c("firsthalf", "secondhalf"),
+                                     presence = c("missing", "observed")))
+
+all_combinations_test 
+
+ completed <- contingency_full_step1 %>%
+  group_by(ProteinID, peak, midpoint, experiment_name) %>%
+   summarize(num = n())
+completed %>% filter(num == 3)
+
+```
+
+
+
+NOT USING THIS, using script
+```{r}
+short_tidy_unique_peaks_manual <- short_tidy_unique_manual %>% 
+  left_join(peaks_manual, by = c("ProteinID", "experiment_name", "FractionOrder")) %>%
+  select(Peptide, experiment_name, ProteinID, Start, End, FractionOrder, pepcount, peak)
+
+
+
+short_tidy_unique_peaks_manual 
+
+short_tidy_unique_peaks_expanded_manual <-  short_tidy_unique_peaks_manual %>%
+   mutate(pepid = paste0(Start, "-", End)) %>%
+   mutate(presence = "observed") %>%
+  
+    group_by(ProteinID) %>%
+     complete(nesting(pepid, Peptide), nesting(experiment_name, peak)) %>%
+   ungroup %>%
+     separate(pepid, into = c("Start", "End"), sep = "-", convert = TRUE, remove = FALSE) %>% # get start and end for filled in peptides
+    mutate(presence = replace_na(presence, "missing")) # Filled in peptides get zero presence
+
+# Get peaks that have at least 7 unique peptides
+enough_cov_peaks_manual <- short_tidy_unique_peaks_manual %>%
+   filter(!is.na(peak)) %>%
+    group_by(ProteinID, peak, experiment_name) %>%
+    mutate(n = n()) %>%
+  ungroup %>%
+  filter(n >= 7) %>%
+  select(-n)
+
+short_tidy_unique_peaks_expanded_fragments_manual  <- short_tidy_unique_peaks_expanded_manual %>%
+  filter(!is.na(peak)) %>%
+  semi_join(enough_cov_peaks_manual, by = c("ProteinID", "peak", "experiment_name"))
+  
+short_tidy_unique_peaks_expanded_fragments_manual  %>%
+  write_csv("data/short_tidy_unique_peaks_expanded_fragments_manual.csv")
+
+
+short_tidy_unique_peaks_expanded_fragments_manual <- read_csv("data/short_tidy_unique_peaks_expanded_fragments_manual.csv")
+
+# about 1/20th the size of the full dataset
+
+```
+
+Calculate terminal bias for the manually annotated fragments
+```{r}
+
+# Take some time, est 
+short_tidy_unique_peaks_expanded_fragments_tb_manual<- short_tidy_unique_peaks_expanded_fragments_manual %>%
+  
+  arrange(Start, End)%>%
+  split(list(.$ProteinID, .$experiment_name, .$peak)) %>%
+  future_map_dfr(~possibly_get_bps(.))
+
+```
+
+
+
+### Calculate terminal bias for each peak
+```{r}
+
+# Get which peptides were observed in each peak
+obs_key_manual <- short_tidy_unique_peaks_expanded_fragments_manual %>%
+  select(ProteinID, experiment_name, peak, Start, presence) %>% unique
+
+# Need to get either next observed peptide past peak for C-terminal fragment 
+# or previous observed pepide prior to peak for N-terminal fragment
+
+
+
+short_tidy_unique_peaks_expanded_fragments_tb_manual_fc <- short_tidy_unique_peaks_expanded_fragments_tb_manual %>%
+  group_by(ProteinID, experiment_name, peak) %>%
+      filter(abs_log2fc == max(abs_log2fc))%>% data.frame() %>%
+
+  left_join(obs_key_manual, by = c("ProteinID", "experiment_name", "peak")) %>%
+     arrange(Start) %>%
+  filter(presence == "observed") %>%
+  mutate(diff = Start - bp_start) %>% 
+  mutate(remove_flag = case_when(log2fc > 0 & diff >0  ~ TRUE, # Only look to left of N-term frag
+                                       
+                           log2fc < 0 & diff < 0 ~ TRUE,
+                           TRUE ~ FALSE
+                            )) %>% #Only look toward C-terminal for C-term frag
+  filter(remove_flag != TRUE) %>%
+  filter(diff !=0) %>% # Always offset by 1 
+  arrange(diff ) %>%
+  group_by(ProteinID, experiment_name, peak) %>%
+    mutate(terminal = case_when(log2fc > 0 ~ "nterm",
+                              log2fc < 0 ~ "cterm")) %>%
+   mutate(actual_terminal_peptide = case_when(log2fc > 0 & diff == max(diff) ~ Start,
+                                       
+                                              log2fc < 0 & diff == min(diff) ~ Start)) %>%
+  filter(!is.na(actual_terminal_peptide)) %>%
+  
+   # Fragments must contain at least 3 peptides. Missing ends must contain at least 3 peptides
+   # Hasn't been calibrated except for nterm and missing c term
+     mutate(toosmallfrag=  case_when(
+     terminal == "nterm" & observed_nterm <= 3 ~ "toosmall", # Actually only 2 observed
+     terminal == "cterm" & observed_cterm <= 4 ~ "toosmall",# Actually only 2 observed
+     terminal == "nterm" & missing_cterm <= 3 ~ "toosmall", # Actually missing 2 peptides
+     terminal == "cterm" & missing_nterm < 3 ~ "toosmall",
+     TRUE  ~ "fine"
+     
+   )) %>%
+  filter(toosmallfrag == "fine") %>%
+  select(-toosmallfrag) %>% 
+  unique %>%
+  ungroup
+
+short_tidy_unique_peaks_expanded_fragments_tb_manual_fc  %>%
+  write_csv("data/short_tidy_unique_peaks_expanded_fragments_tb_manual_fc.csv")
+
+
+# Only need the terminal bias score for the identified terminal 
+```
+
+
+# END unused part
